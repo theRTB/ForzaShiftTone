@@ -444,12 +444,11 @@ class ForzaBeep(ForzaUIBase):
             gear.oneshift_handler(self.oneshift.get()==1)
 
     def loop_car_ordinal(self, fdp):
-        if self.car_ordinal is None:
+        if self.car_ordinal is None and fdp.car_ordinal != 0:
             self.car_ordinal = fdp.car_ordinal
-        elif self.car_ordinal == 0:
+        elif fdp.car_ordinal == 0:
             return
-        else:
-            self.car_ordinal != fdp.car_ordinal
+        elif self.car_ordinal != fdp.car_ordinal:
             self.reset()
             self.car_ordinal = fdp.car_ordinal
             print(f"Ordinal changed to {self.car_ordinal}, resetting!")
