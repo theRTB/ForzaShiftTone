@@ -9,7 +9,8 @@ To enable remote telemetry in Forza Horizon 5 on PC for this application:
 
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
 - One uninterrupted second of data per gear, on road. After this the gear values will lock and the gear ratio derived to a reasonably accurate degree. Road surfaces are far more accurate than dirt/off-road.
-- An unobstructed straight acceleration in a medium gear all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts.
+- An unobstructed full throttle acceleration in a medium gear all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts.
+  - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline.
 - Rev limit can be manually entered or derived from the required run. Defaults to maximum engine rpm minus 750.
 - The data is not saved for now. Restarting the application results in a blank state including configuration.
 
