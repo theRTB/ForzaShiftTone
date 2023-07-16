@@ -177,7 +177,7 @@ class Gear():
 
         self.ratio = tkinter.DoubleVar(value='0.000')
         self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
-        self.state = 'UNUSED'
+        self.state = GearState(label=f'Gear {number}')
 
         self.variance = tkinter.DoubleVar(value='0')
 
@@ -209,15 +209,22 @@ class Gear():
         self.set_shiftrpm(99999)
         self.set_ratio(0)
         self.ratio_deque.clear()
-        self.state = 'UNUSED'
+        self.state.reset()
 
         self.variance.set('0')
 
     def set_shiftrpm(self, val):
         self.shiftrpm.set(int(val))
 
+    def get_ratio(self):
+        return self.ratio.get()
+
     def set_ratio(self, val):
         self.ratio.set(f'{val:.3f}')
+
+    def newrun_decrease_state(self):
+        if self.state == GearState.CALCULATED:
+            self.state = GearState.LOCKED
 
     def oneshift_handler(self, enabled):
         if enabled:
@@ -242,10 +249,10 @@ class Gear():
             self.entry_variance.grid()
 
     def derive_gearratio(self, fdp):
-        if self.state == 'UNUSED':
-            self.state = 'REACHED'
+        if self.state == GearState.UNUSED:
+            self.state = GearState.REACHED
 
-        if self.state in ['LOCKED', 'CALCULATED']:
+        if self.state >= GearState.LOCKED:
             return
 
         rpm = fdp.current_engine_rpm
@@ -279,11 +286,17 @@ class Gear():
         var = statistics.variance(self.ratio_deque)#, avg)
         self.variance.set(f'{var:.1e}')
         if var < var_bound and len(self.ratio_deque) == self.DEQUE_LEN:
-            if self.state != 'REACHED':
-                print(f"gear {self.gear} locked from from state other than REACHED")
-            self.state = 'LOCKED'
+            self.state = GearState.LOCKED
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
+        
+    def derive_shiftrpm(self, rpm, power, nextgear):
+        if (self.state == GearState.LOCKED and
+                nextgear.state >= GearState.LOCKED):
+            shiftrpm = calculate_shiftrpm(rpm, power,
+                                 self.ratio.get() / nextgear.get_ratio())
+            self.set_shiftrpm(shiftrpm)
+            self.state = GearState.CALCULATED
 
 class ForzaUIBase():
     TITLE = 'ForzaUIBase'
@@ -494,8 +507,7 @@ class ForzaBeep(ForzaUIBase):
                     self.curve = newrun
                     self.revlimit.set(int(self.curve[-1].current_engine_rpm))
                     for g in self.gears[1:]:
-                        if g.state == 'CALCULATED':
-                            g.state = 'LOCKED'
+                        g.newrun_decrease_state()
                             #print(f"Gear {g.gear} reset to LOCKED")
               #      print(f'revlimit set: {self.revlimit.get()}')
                 else:
@@ -513,11 +525,7 @@ class ForzaBeep(ForzaUIBase):
             #filter power
 
             for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
-                if g1.state=='LOCKED' and g2.state in ['LOCKED', 'CALCULATED']:
-                    shiftrpm = calculate_shiftrpm(rpm, power,
-                                                 g1.ratio.get()/g2.ratio.get())
-                    g1.set_shiftrpm(shiftrpm)
-                    g1.state = 'CALCULATED'
+                g1.calculate_shiftrpm(rpm, power, g2)
                #     print(f"gear {g1.gear} shiftrpm set: {shiftrpm}")
 
     #we assume power is negative between gear change and first frame of shift
