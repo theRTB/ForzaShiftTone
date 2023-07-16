@@ -144,6 +144,27 @@ class RunCollector():
         self.prev_rpm = -1
         self.gear_collected = -1
 
+class GearState():
+    UNUSED = 0     # gear has not been seen (yet)
+    REACHED = 1    # gear has been seen
+    LOCKED = 2     # variance low on gear ratio low enough
+    CALCULATED = 3 # shift rpm calculated off gear ratios
+    
+    def reset(self):
+        self.state = self.GEAR_UNUSED
+        
+    def __init__(self, label):
+        self.label = label
+        self.reset()
+    
+    def to_next(self):
+        assert self.state == 3, f'state {self.label} to_next used on CALCULATED state'
+        self.state += 1
+    
+    def to_previous(self):
+        assert self.state == 0, f'state {self.label} to_previous used on UNUSED state'
+        self.state -= 1
+
 class Gear():
     ENTRY_WIDTH = 6
     DEQUE_LEN = 60
