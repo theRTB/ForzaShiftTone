@@ -151,11 +151,14 @@ class GearState():
     CALCULATED = 3 # shift rpm calculated off gear ratios
     
     def reset(self):
-        self.state = self.GEAR_UNUSED
+        self.state = self.UNUSED
         
     def __init__(self, label):
         self.label = label
         self.reset()
+    
+    def set(self, state):
+        self.state = state
     
     def to_next(self):
         assert self.state == 3, f'state {self.label} to_next used on CALCULATED state'
@@ -164,6 +167,15 @@ class GearState():
     def to_previous(self):
         assert self.state == 0, f'state {self.label} to_previous used on UNUSED state'
         self.state -= 1
+
+    def __eq__(self, other):
+        #we assume other is int derived from GearState.(statehere)
+        return (self.state == other)
+
+    def __ge__(self, other):
+        #we assume other is int derived from GearState.(statehere)
+        return (self.state >= other)
+        
 
 class Gear():
     ENTRY_WIDTH = 6
@@ -224,7 +236,7 @@ class Gear():
 
     def newrun_decrease_state(self):
         if self.state == GearState.CALCULATED:
-            self.state = GearState.LOCKED
+            self.state.set(GearState.LOCKED)
 
     def oneshift_handler(self, enabled):
         if enabled:
@@ -250,7 +262,7 @@ class Gear():
 
     def derive_gearratio(self, fdp):
         if self.state == GearState.UNUSED:
-            self.state = GearState.REACHED
+            self.state.set(GearState.REACHED)
 
         if self.state >= GearState.LOCKED:
             return
@@ -286,17 +298,17 @@ class Gear():
         var = statistics.variance(self.ratio_deque)#, avg)
         self.variance.set(f'{var:.1e}')
         if var < var_bound and len(self.ratio_deque) == self.DEQUE_LEN:
-            self.state = GearState.LOCKED
+            self.state.set(GearState.LOCKED)
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
         
-    def derive_shiftrpm(self, rpm, power, nextgear):
+    def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state == GearState.LOCKED and
                 nextgear.state >= GearState.LOCKED):
             shiftrpm = calculate_shiftrpm(rpm, power,
                                  self.ratio.get() / nextgear.get_ratio())
             self.set_shiftrpm(shiftrpm)
-            self.state = GearState.CALCULATED
+            self.state.set(GearState.CALCULATED)
 
 class ForzaUIBase():
     TITLE = 'ForzaUIBase'
