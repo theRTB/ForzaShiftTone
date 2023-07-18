@@ -162,11 +162,11 @@ class GearState():
         self.state = state
     
     def to_next(self):
-        assert self.state == 3, f'state {self.label} to_next used on CALCULATED state'
+        assert self.state < 3, f'state {self.label} to_next used on CALCULATED state'
         self.state += 1
     
     def to_previous(self):
-        assert self.state == 0, f'state {self.label} to_previous used on UNUSED state'
+        assert self.state > 0, f'state {self.label} to_previous used on UNUSED state'
         self.state -= 1
 
     def is_initial(self):
