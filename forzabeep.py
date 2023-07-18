@@ -144,10 +144,11 @@ class RunCollector():
         self.prev_rpm = -1
         self.gear_collected = -1
 
+#Enumlike class
 class GearState():
     UNUSED = 0     # gear has not been seen (yet)
-    REACHED = 1    # gear has been seen
-    LOCKED = 2     # variance low on gear ratio low enough
+    REACHED = 1    # gear has been seen, variance above lower bound
+    LOCKED = 2     # variance on gear ratio below lower bound
     CALCULATED = 3 # shift rpm calculated off gear ratios
     
     def reset(self):
@@ -168,13 +169,27 @@ class GearState():
         assert self.state == 0, f'state {self.label} to_previous used on UNUSED state'
         self.state -= 1
 
+    def is_initial(self):
+        return self.state == self.UNUSED
+    
+    def at_locked(self):
+        return self.state == self.LOCKED
+    
+    def at_least_locked(self):
+        return self.state >= self.LOCKED
+    
+    def is_final(self):
+        return self.state == self.CALCULATED
+
     def __eq__(self, other):
-        #we assume other is int derived from GearState.(statehere)
-        return (self.state == other)
+        if self.__class__ is other.__class__:
+            return self.value == other.value
+        return NotImplemented
 
     def __ge__(self, other):
-        #we assume other is int derived from GearState.(statehere)
-        return (self.state >= other)
+        if self.__class__ is other.__class__:
+            return self.value >= other.value
+        return NotImplemented
         
 
 class Gear():
@@ -235,8 +250,8 @@ class Gear():
         self.ratio.set(f'{val:.3f}')
 
     def newrun_decrease_state(self):
-        if self.state == GearState.CALCULATED:
-            self.state.set(GearState.LOCKED)
+        if self.state.is_final():
+            self.state.to_previous()
 
     def oneshift_handler(self, enabled):
         if enabled:
@@ -261,16 +276,16 @@ class Gear():
             self.entry_variance.grid()
 
     def derive_gearratio(self, fdp):
-        if self.state == GearState.UNUSED:
-            self.state.set(GearState.REACHED)
+        if self.state.is_initial():
+            self.state.to_next()
 
-        if self.state >= GearState.LOCKED:
+        if self.state.at_least_locked():
             return
 
         rpm = fdp.current_engine_rpm
         if abs(fdp.speed) < 3 or rpm == 0: #if speed below 3 m/s assume faulty data
             return
-
+    
         rad = 0
         var_bound = 1e-08
         if fdp.drivetrain_type == 0: #FWD
@@ -298,17 +313,16 @@ class Gear():
         var = statistics.variance(self.ratio_deque)#, avg)
         self.variance.set(f'{var:.1e}')
         if var < var_bound and len(self.ratio_deque) == self.DEQUE_LEN:
-            self.state.set(GearState.LOCKED)
+            self.state.to_next() #implied from reached to locked
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
         
     def calculate_shiftrpm(self, rpm, power, nextgear):
-        if (self.state == GearState.LOCKED and
-                nextgear.state >= GearState.LOCKED):
+        if (self.state.at_locked() and nextgear.state.at_least_locked()):
             shiftrpm = calculate_shiftrpm(rpm, power,
                                  self.ratio.get() / nextgear.get_ratio())
             self.set_shiftrpm(shiftrpm)
-            self.state.set(GearState.CALCULATED)
+            self.state.to_next()
 
 class ForzaUIBase():
     TITLE = 'ForzaUIBase'
