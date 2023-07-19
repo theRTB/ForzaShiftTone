@@ -373,6 +373,8 @@ class ForzaBeep(ForzaUIBase):
     REVLIMIT_GUESS = 750  #revlimit = engine_limit - guess
     #distance between revlimit and engine limit varies between 500 and 1250ish
 
+    DEFAULT_GUI_VALUE = 'N/A'
+
     def __init__(self):
         super().__init__()
         self.__init__vars()
@@ -386,7 +388,8 @@ class ForzaBeep(ForzaUIBase):
         self.curve = None
 
         self.rpm = tkinter.IntVar(value=0)
-        self.revlimit = tkinter.IntVar(value=-1)
+        self.revlimit = -1
+        self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
         self.tone_offset = tkinter.IntVar(value=constants.tone_offset)
         self.revlimit_percent = tkinter.DoubleVar(value=constants.revlimit_percent)
         self.revlimit_frames = tkinter.DoubleVar(value=constants.revlimit_frames)
@@ -421,7 +424,7 @@ class ForzaBeep(ForzaUIBase):
                       ).grid(row=row, column=0, sticky=tkinter.W)
 
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=2)
-        tkinter.Entry(self.root, textvariable=self.revlimit,
+        tkinter.Entry(self.root, textvariable=self.revlimit_var,
                       width=6, justify=tkinter.RIGHT).grid(row=row, column=3)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
@@ -458,7 +461,8 @@ class ForzaBeep(ForzaUIBase):
         self.car_ordinal = None
         
         self.rpm.set(0)
-        self.revlimit.set(-1)
+        self.revlimit = -1
+        self.revlimit.set(self.DEFAULT_GUI_VALUE)
         
         self.shiftdelay_deque.clear()
         
@@ -467,6 +471,13 @@ class ForzaBeep(ForzaUIBase):
 
     def get_soundfile(self):
         return constants.sound_files[self.volume.get()]
+
+    def get_revlimit(self):
+        return self.revlimit
+
+    def set_revlimit(self, val):
+        self.revlimit = int(val)
+        self.revlimit_var.set(self.revlimit)
 
     def loop_car_ordinal(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
@@ -489,14 +500,14 @@ class ForzaBeep(ForzaUIBase):
             if self.curve is None:
             #    print("FIRST RUN DONE!")
                 self.curve = self.runcollector.get_run()
-                self.revlimit.set(int(self.curve[-1].current_engine_rpm))
+                self.set_revlimit(self.curve[-1].current_engine_rpm)
             #    print(f'revlimit set: {self.revlimit.get()}')
             else:
                 newrun = self.runcollector.get_run()
                 if self.curve[0].gear < newrun[0].gear:
                 #    print(f"NEW RUN DONE! len {len(newrun)} gear is higher")
                     self.curve = newrun
-                    self.revlimit.set(int(self.curve[-1].current_engine_rpm))
+                    self.set_revlimit(self.curve[-1].current_engine_rpm)
                     for g in self.gears[1:]:
                         g.newrun_decrease_state()
                             #print(f"Gear {g.gear} reset to LOCKED")
@@ -550,7 +561,7 @@ class ForzaBeep(ForzaUIBase):
     def loop_beep(self, fdp, rpm):
         beep_rpm = self.gears[int(fdp.gear)].get_shiftrpm()
         if self.beep_counter <= 0:
-            if self.test_for_beep(beep_rpm, self.revlimit.get(), fdp):
+            if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
                 self.beep_counter = constants.beep_counter_max
                 self.we_beeped = constants.we_beep_max
                 beep(filename=self.get_soundfile())
@@ -577,9 +588,9 @@ class ForzaBeep(ForzaUIBase):
 
         self.loop_calculate_shiftrpms()
 
-        if self.revlimit.get() == -1:
-            self.revlimit.set(int(fdp.engine_max_rpm - self.REVLIMIT_GUESS))
-            print(f'guess revlimit: {self.revlimit.get()}')
+        if self.get_revlimit() == -1:
+            self.set_revlimit(fdp.engine_max_rpm - self.REVLIMIT_GUESS)
+            print(f'guess revlimit: {self.get_revlimit()}')
 
         self.loop_test_for_shiftrpm(fdp)
 
