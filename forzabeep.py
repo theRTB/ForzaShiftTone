@@ -191,11 +191,14 @@ class GearState():
             return self.value >= other.value
         return NotImplemented
         
-
 class Gear():
     ENTRY_WIDTH = 6
     DEQUE_LEN = 60
     ROW_COUNT = 4
+    
+    BG_UNUSED = '#F0F0F0'
+    BG_REACHED = '#ffffff'
+    BG_LOCKED = '#ccddcc'
 
     def __init__(self, root, number, column, starting_row=0):
         self.gear = number
@@ -214,11 +217,12 @@ class Gear():
         self.label = tkinter.Label(root, textvariable=self.number,
                                    width=self.ENTRY_WIDTH)
         self.entry = tkinter.Entry(root, textvariable=self.shiftrpm,
-                                   width=self.ENTRY_WIDTH,
+                                   width=self.ENTRY_WIDTH, bg=self.BG_UNUSED,
                                    justify=tkinter.RIGHT)
         self.entry_ratio = tkinter.Entry(root, textvariable=self.ratio,
                                          width=self.ENTRY_WIDTH,
-                                         justify=tkinter.RIGHT)
+                                         justify=tkinter.RIGHT,
+                                         bg=self.BG_UNUSED)
         self.entry_variance = tkinter.Entry(root, textvariable=self.variance,
                                          width=self.ENTRY_WIDTH,
                                          justify=tkinter.RIGHT)
@@ -239,6 +243,8 @@ class Gear():
         self.state.reset()
 
         self.variance.set('0')
+        self.entry.config(bg=self.BG_UNUSED)
+        self.entry_ratio.config(bg=self.BG_UNUSED)
 
     def set_shiftrpm(self, val):
         self.shiftrpm.set(int(val))
@@ -278,6 +284,7 @@ class Gear():
     def derive_gearratio(self, fdp):
         if self.state.is_initial():
             self.state.to_next()
+            self.entry_ratio.config(bg=self.BG_REACHED)
 
         if self.state.at_least_locked():
             return
@@ -314,6 +321,7 @@ class Gear():
         self.variance.set(f'{var:.1e}')
         if var < var_bound and len(self.ratio_deque) == self.DEQUE_LEN:
             self.state.to_next() #implied from reached to locked
+            self.entry_ratio.config(bg=self.BG_LOCKED)
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
         
@@ -323,6 +331,7 @@ class Gear():
                                  self.ratio.get() / nextgear.get_ratio())
             self.set_shiftrpm(shiftrpm)
             self.state.to_next()
+            self.entry.config(bg=self.BG_LOCKED)
 
 class ForzaUIBase():
     TITLE = 'ForzaUIBase'
