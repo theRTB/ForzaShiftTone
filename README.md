@@ -19,8 +19,8 @@ While it is intended to run in the background without consideration while drivin
 There are three triggers:
 - Shift RPM: The RPM value in which power in the next gear becomes equal or higher to the power in the current gear. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep.
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit.
-  - Example: A rev limit of 7850 and a value of 0.996 triggers a beep if it predicts 7818.6 rpm will be reached in 17 frames (or less).
-- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 17+5=22 packets (366.7 ms)
+  - Example: A rev limit of 7850 and a value of 0.996 triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds.
+- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 367 milliseconds.
 
 The delay between beep triggers is currently hardcoded to 0.5 seconds. This time-out is shared between the three triggers.
 
