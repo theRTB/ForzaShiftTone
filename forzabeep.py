@@ -647,32 +647,23 @@ class Lookahead():
         self.deque.append(fdp.current_engine_rpm)
         self.set_linreg_vars()
 
+    #x is the frame distance to the most recently added point
+    #this has the advantage that the slope is counted from the most recent point
     def set_linreg_vars(self):
-        if len(self.deque) < 2:
+        if len(self.deque) < self.minlen:
             return
         x, y = range(-len(self.deque)+1, 1), self.deque
         self.slope, self.intercept = statistics.linear_regression(x, y)
-        if self.slope == 0: #invalid slope
-            self.slope = -1
-
-    #x is the frame distance to the most recently added point
-    #this has the advantage that the slope is counted from the most recent point
-    def distance_to(self, target_rpm):
-        if self.slope is None:
-            self.set_linreg_vars()
-        distance = (target_rpm - self.intercept) / self.slope
-        #print(f'target_rpm {target_rpm} slope {slope} intercept {intercept} distance {distance}')
-        return distance
 
     #slope factor is used to shape the prediction with more information than
     #from just the linear regression. As RPM is not linear, it will otherwise
     #overestimate consistently.
     def test(self, target_rpm, lookahead, slope_factor=1):
-        if len(self.deque) < 10 or self.slope <= 0 or slope_factor <= 0:
+        if (len(self.deque) < self.minlen or self.slope <= 0 or 
+            slope_factor <= 0):
             return False
         distance = (target_rpm - self.intercept) / (self.slope * slope_factor)
-        return (len(self.deque) > self.minlen and self.slope > 0 and
-                0 <= distance <= lookahead)
+        return 0 <= distance <= lookahead
 
     def reset(self):
         self.deque.clear()
