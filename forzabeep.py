@@ -30,6 +30,10 @@ class constants():
     port = 12350
     packet_format = 'fh4'
     sound_file = 'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
+    sound_files = {  0:'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
+                   -10:'audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
+                   -20:'audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
+                   -30:'audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
 
@@ -480,6 +484,9 @@ class ForzaBeep(ForzaUIBase):
         for g in self.gears[1:]:
             g.reset()
 
+    def get_soundfile(self):
+        return constants.sound_files[self.volume.get()]
+
     def loop_car_ordinal(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
             self.car_ordinal = fdp.car_ordinal
@@ -565,7 +572,7 @@ class ForzaBeep(ForzaUIBase):
             if self.test_for_beep(beep_rpm, self.revlimit.get(), fdp):
                 self.beep_counter = constants.beep_counter_max
                 self.we_beeped = constants.we_beep_max
-                beep()
+                beep(filename=self.get_soundfile())
             elif rpm < math.ceil(beep_rpm*constants.beep_rpm_pct):
                 self.beep_counter = 0
         elif self.beep_counter > 0 and rpm < beep_rpm:
@@ -689,9 +696,9 @@ class Lookahead():
     def clear_linreg_vars(self):
         self.slope, self.intercept = None, None
 
-def beep():
+def beep(filename=constants.sound_file):
     try:
-        winsound.PlaySound(constants.sound_file,
+        winsound.PlaySound(filename,
                            winsound.SND_FILENAME | winsound.SND_ASYNC |
                            winsound.SND_NODEFAULT)
     except:
