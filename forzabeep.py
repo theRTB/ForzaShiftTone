@@ -410,7 +410,7 @@ class ForzaBeep(ForzaUIBase):
                  
         var = tkinter.StringVar()  
         spinbox = tkinter.Spinbox(self.root, state='readonly',
-                        width=6, justify=tkinter.RIGHT, textvariable=var,
+                        width=5, justify=tkinter.RIGHT, textvariable=var,
                         readonlybackground='#FFFFFF', **spinbox_dict)
 
         var.set(value)
@@ -468,8 +468,9 @@ class ForzaBeep(ForzaUIBase):
                                                        row, column)
 
     def __init__window(self):
-        for i, text in enumerate(['Gear', 'RPM', 'Ratio']):
-            tkinter.Label(self.root, text=text, width=7).grid(row=i, column=0)
+        for i, text in enumerate(['Gear', 'Shift RPM', 'Ratio', 'RPM:']):
+            tkinter.Label(self.root, text=text, width=8, anchor=tkinter.E
+                          ).grid(row=i, column=0)
 
         self.gears = [None] + [Gear(self.root, g, g) for g in range(1, 11)]
 
@@ -477,11 +478,11 @@ class ForzaBeep(ForzaUIBase):
 
         tkinter.Label(self.root, textvariable=self.rpm, width=5,
                       justify=tkinter.RIGHT, anchor=tkinter.E
-                      ).grid(row=row, column=0, sticky=tkinter.W)
+                      ).grid(row=row, column=1, sticky=tkinter.W)
 
-        tkinter.Label(self.root, text='Revlimit').grid(row=row, column=2)
+        tkinter.Label(self.root, text='Revlimit').grid(row=row, column=3)
         tkinter.Entry(self.root, textvariable=self.revlimit_var,
-                      width=6, justify=tkinter.RIGHT).grid(row=row, column=3)
+                      width=6, justify=tkinter.RIGHT).grid(row=row, column=4)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
         resetbutton.grid(row=row, column=5)
