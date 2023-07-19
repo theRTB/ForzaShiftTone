@@ -374,6 +374,10 @@ class ForzaBeep(ForzaUIBase):
     #distance between revlimit and engine limit varies between 500 and 1250ish
 
     DEFAULT_GUI_VALUE = 'N/A'
+    
+    REVLIMIT_BG_NA = '#F0F0F0'
+    REVLIMIT_BG_GUESS = '#ffffff'
+    REVLIMIT_BG_CURVE = '#ccddcc'
 
     def __init__(self):
         super().__init__()
@@ -481,8 +485,11 @@ class ForzaBeep(ForzaUIBase):
                       ).grid(row=row, column=1, sticky=tkinter.W)
 
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=3)
-        tkinter.Entry(self.root, textvariable=self.revlimit_var,
-                      width=6, justify=tkinter.RIGHT).grid(row=row, column=4)
+        self.revlimit_entry = tkinter.Entry(self.root, width=6, 
+                                            state='readonly', 
+                                            justify=tkinter.RIGHT,
+                                            textvariable=self.revlimit_var)
+        self.revlimit_entry.grid(row=row, column=4)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
         resetbutton.grid(row=row, column=5)
@@ -528,6 +535,9 @@ class ForzaBeep(ForzaUIBase):
         
         self.shiftdelay_deque.clear()
         
+        self.entry.config()
+        self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
+        
         for g in self.gears[1:]:
             g.reset()
 
@@ -563,6 +573,8 @@ class ForzaBeep(ForzaUIBase):
             #    print("FIRST RUN DONE!")
                 self.curve = self.runcollector.get_run()
                 self.set_revlimit(self.curve[-1].current_engine_rpm)
+                self.revlimit_entry.configure(
+                                    readonlybackground=self.REVLIMIT_BG_CURVE)
             #    print(f'revlimit set: {self.revlimit.get()}')
             else:
                 newrun = self.runcollector.get_run()
@@ -652,6 +664,8 @@ class ForzaBeep(ForzaUIBase):
 
         if self.get_revlimit() == -1:
             self.set_revlimit(fdp.engine_max_rpm - self.REVLIMIT_GUESS)
+            self.revlimit_entry.configure(
+                                    readonlybackground=self.REVLIMIT_BG_GUESS)
             print(f'guess revlimit: {self.get_revlimit()}')
 
         self.loop_test_for_shiftrpm(fdp)
