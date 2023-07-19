@@ -405,6 +405,8 @@ class ForzaBeep(ForzaUIBase):
         self.tone_offset = tkinter.IntVar(value=constants.tone_offset)
         self.revlimit_percent = tkinter.DoubleVar(value=constants.revlimit_percent)
         self.revlimit_frames = tkinter.DoubleVar(value=constants.revlimit_frames)
+        
+        self.volume = tkinter.IntVar(value=0)
 
         self.runcollector = RunCollector()
         self.lookahead = Lookahead(constants.linreg_len_min,
@@ -445,13 +447,17 @@ class ForzaBeep(ForzaUIBase):
             self.active_handler()
         tkinter.Checkbutton(self.root, text='Active',
                             variable=self.active, command=self.active_handler
-                            ).grid(row=row, column=7, columnspan=2,
+                            ).grid(row=row, column=6, columnspan=2,
                                    sticky=tkinter.W)
+                                   
+        tkinter.Scale(self.root, label='Volume dB', orient=tkinter.HORIZONTAL,
+                      from_=0, to=-30, variable=self.volume, resolution=10
+                      ).grid(row=row, column=9, columnspan=2, rowspan=2)
         
         row += 1 #continue on next row
-        self.init_gui_variable('Tone offset', self.tone_offset, row, 1)
-        self.init_gui_variable('Revlimit %', self.revlimit_percent, row, 4)
-        self.init_gui_variable('Revlimit ms', self.revlimit_frames, row, 7)
+        self.init_gui_variable('Tone offset', self.tone_offset, row, 0)
+        self.init_gui_variable('Revlimit %', self.revlimit_percent, row, 3)
+        self.init_gui_variable('Revlimit ms', self.revlimit_frames, row, 6)
         # tkinter.Label(self.root, text='Tone offset').grid(row=row, column=1,
         #                                                   columnspan=2)
         # tkinter.Entry(self.root, textvariable=self.tone_offset,
