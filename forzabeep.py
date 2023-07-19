@@ -462,7 +462,7 @@ class ForzaBeep(ForzaUIBase):
         
         self.rpm.set(0)
         self.revlimit = -1
-        self.revlimit.set(self.DEFAULT_GUI_VALUE)
+        self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
         
         self.shiftdelay_deque.clear()
         
