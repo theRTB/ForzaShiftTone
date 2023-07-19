@@ -39,7 +39,7 @@ class constants():
 
     tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
     revlimit_percent = 0.996 #respected rev limit for trigger revlimit
-    revlimit_frames = 5 #additional margin in packets for revlimit
+    revlimit_offset = 5 #additional margin in packets for revlimit
 
     log_full_shiftdata = True
     
@@ -365,7 +365,7 @@ class ForzaUIBase():
 
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
-    WIDTH, HEIGHT = 745, 205
+    WIDTH, HEIGHT = 785, 205
 
     MAXGEARS = 10
 
@@ -390,9 +390,9 @@ class ForzaBeep(ForzaUIBase):
         self.rpm = tkinter.IntVar(value=0)
         self.revlimit = -1
         self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
-        self.tone_offset = tkinter.IntVar(value=constants.tone_offset)
-        self.revlimit_percent = tkinter.DoubleVar(value=constants.revlimit_percent)
-        self.revlimit_frames = tkinter.DoubleVar(value=constants.revlimit_frames)
+        self.tone_offset = constants.tone_offset
+        self.revlimit_percent = constants.revlimit_percent
+        self.revlimit_offset = constants.revlimit_offset
         
         self.volume = tkinter.IntVar(value=0)
 
@@ -404,12 +404,68 @@ class ForzaBeep(ForzaUIBase):
 
         self.car_ordinal = None
 
-    def init_gui_variable(self, name, tkinter_var, row, column):
-        tkinter.Label(self.root, text=name).grid(row=row, column=column,
-                                                 columnspan=2, sticky='E')
-        tkinter.Entry(self.root, textvariable=tkinter_var,
-                      width=6, justify=tkinter.RIGHT).grid(row=row, 
-                                                           column=column+2)
+    
+    def __init_spinbox(self, name, value, spinbox_dict, row, column):
+        label = tkinter.Label(self.root, text=name)
+                 
+        var = tkinter.StringVar()  
+        spinbox = tkinter.Spinbox(self.root, state='readonly',
+                        width=6, justify=tkinter.RIGHT, textvariable=var,
+                        readonlybackground='#FFFFFF', **spinbox_dict)
+
+        var.set(value)
+        label.grid(row=row, column=column, columnspan=2, sticky='E')
+        spinbox.grid(row=row, column=column+2)
+        return spinbox
+        
+    def get_tone_offset(self):
+        return self.tone_offset
+    
+    #tone_offset_gui is in integer milliseconds, rounding lets us recover
+    #the original distance in packets
+    def update_tone_offset(self):
+        self.tone_offset = round(60*int(self.tone_offset_gui.get())/1000, 0)
+        
+    def __init_spinbox_tone_offset(self, row, column):
+        name = 'Tone offset (ms)'
+        spinbox_dict = {'values':[int(1000*x/60) for x in range(10, 22)],
+                        'command':self.update_tone_offset}
+        value = int(1000*constants.tone_offset/60)
+        
+        self.tone_offset_gui = self.__init_spinbox(name, value, spinbox_dict, 
+                                                   row, column)
+
+    def get_revlimit_percent(self):
+        return self.revlimit_percent
+    
+    def update_revlimit_percent(self):
+        self.revlimit_percent = float(self.revlimit_percent_gui.get())/100
+        
+    def __init_spinbox_revlimit_percent(self, row, column):
+        name = 'Revlimit (%)'
+        spinbox_dict = {'values':[x/10 for x in range(950, 999)],
+                        'command':self.update_revlimit_percent}
+        value = round(100*constants.revlimit_percent, 1)
+        
+        self.revlimit_percent_gui = self.__init_spinbox(name, value, 
+                                                        spinbox_dict, 
+                                                        row, column)
+
+    def get_revlimit_offset(self):
+        return self.revlimit_offset
+    
+    def update_revlimit_offset(self):
+        self.revlimit_ms = round(60*int(self.revlimit_ms_gui.get())/1000, 0)
+        
+    def __init_spinbox_revlimit_offset(self, row, column):
+        name = 'Revlimit (ms)'
+        spinbox_dict = {'values':[int(1000*x/60) for x in range(2, 8)],
+                        'command':self.update_revlimit_offset}
+        value = int(1000*constants.revlimit_offset/60)
+        
+        self.revlimit_offset_gui = self.__init_spinbox(name, value, 
+                                                       spinbox_dict, 
+                                                       row, column)
 
     def __init__window(self):
         for i, text in enumerate(['Gear', 'RPM', 'Ratio']):
@@ -443,9 +499,14 @@ class ForzaBeep(ForzaUIBase):
                       ).grid(row=row, column=9, columnspan=2, rowspan=2)
         
         row += 1 #continue on next row
-        self.init_gui_variable('Tone offset', self.tone_offset, row, 0)
-        self.init_gui_variable('Revlimit %', self.revlimit_percent, row, 3)
-        self.init_gui_variable('Revlimit ms', self.revlimit_frames, row, 6)
+        
+        self.__init_spinbox_tone_offset(row, column=0)
+        self.__init_spinbox_revlimit_percent(row, column=3)
+        self.__init_spinbox_revlimit_offset(row, column=6)
+        
+        
+        # self.init_gui_variable('Revlimit %', self.revlimit_percent, row, 3)
+       # self.init_gui_variable('Revlimit ms', self.revlimit_offset, row, 6)
         # tkinter.Label(self.root, text='Tone offset').grid(row=row, column=1,
         #                                                   columnspan=2)
         # tkinter.Entry(self.root, textvariable=self.tone_offset,
@@ -624,28 +685,28 @@ class ForzaBeep(ForzaUIBase):
     def test_for_beep(self, shiftrpm, revlimit, fdp):
         if fdp.accel < self.MIN_THROTTLE_FOR_BEEP:
             return False
-        tone_offset = self.tone_offset.get()
+        tone_offset = self.get_tone_offset()
 
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
         # from_gear = from_gear and fdp.accel >= self.MIN_THROTTLE_FOR_BEEP
         
         revlimit_pct, revlimit_pct_ratio = self.torque_ratio_test(
-            revlimit*self.revlimit_percent.get(), tone_offset, fdp)
+            revlimit*self.get_revlimit_percent(), tone_offset, fdp)
         revlimit_time, revlimit_time_ratio = self.torque_ratio_test(
-            revlimit, (tone_offset + self.revlimit_frames.get()), fdp)
+            revlimit, (tone_offset + self.get_revlimit_offset()), fdp)
 
         # from_gear = self.lookahead.test(shiftrpm, tone_offset)
         # revlimit_pct = self.lookahead.test(revlimit*self.revlimit_percent.get()
         #                                    , tone_offset)
         # revlimit_time = self.lookahead.test(revlimit, (tone_offset +
-        #                                            self.revlimit_frames.get()))
+        #                                            self.revlimit_offset.get()))
 
         if from_gear and constants.log_full_shiftdata:
             print(f'beep from_gear: {shiftrpm}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {from_gear_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
         if revlimit_pct and constants.log_full_shiftdata:
-            print(f'beep revlimit_pct: {revlimit*self.revlimit_percent.get()}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_pct_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
+            print(f'beep revlimit_pct: {revlimit*self.get_revlimit_percent()}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_pct_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
         if revlimit_time and constants.log_full_shiftdata:
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
