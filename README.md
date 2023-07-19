@@ -14,7 +14,7 @@ While it is intended to run in the background without consideration while drivin
 - Rev limit can be manually entered or derived from the required run. Defaults to maximum engine rpm minus 750.
 - The data is not saved for now. Restarting the application results in a blank state including configuration.
 
-![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-2.png)
+![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-3.png)
 
 ## Implementation
 There are three triggers:
@@ -39,3 +39,4 @@ The settings are not saved for now. Remote telemetry sends data at 60 packets pe
 - Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit. Defaults to 5 packets (83ms)
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
 - Reset button: If pressed, reset revlimit and all values for all gears. Configuration values are unchanged. If the UI is unresponsive, restart the application.
+- Volume: Adjusts the volume of the beep. Options are 0dB, -10dB, -20dB, -30dB. Each step is about half as loud as the previous, where 0dB is the loudest and default.
