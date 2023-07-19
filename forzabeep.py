@@ -186,16 +186,17 @@ class Gear():
 
         self.__init__window(root, column, starting_row)
 
+    def init_gui_entry(self, root, variable):
+        return tkinter.Entry(root, textvariable=variable, 
+                             state='readonly', 
+                             width=self.ENTRY_WIDTH, justify=tkinter.RIGHT)
+                             # , bg=self.BG_UNUSED)
+
     def __init__window(self, root, column, starting_row):
         self.label = tkinter.Label(root, textvariable=self.number,
                                    width=self.ENTRY_WIDTH)
-        self.entry = tkinter.Entry(root, textvariable=self.shiftrpm,
-                                   width=self.ENTRY_WIDTH, bg=self.BG_UNUSED,
-                                   justify=tkinter.RIGHT)
-        self.entry_ratio = tkinter.Entry(root, textvariable=self.ratio,
-                                         width=self.ENTRY_WIDTH,
-                                         justify=tkinter.RIGHT,
-                                         bg=self.BG_UNUSED)
+        self.entry = self.init_gui_entry(root, self.shiftrpm)
+        self.entry_ratio = self.init_gui_entry(root, self.ratio)
 
         self.label.grid(row=starting_row, column=column)
         if self.gear != 10:
@@ -212,8 +213,8 @@ class Gear():
         self.state.reset()
 
         self.variance.set('0')
-        self.entry.config(bg=self.BG_UNUSED)
-        self.entry_ratio.config(bg=self.BG_UNUSED)
+        self.entry.config(readonlybackground=self.BG_UNUSED)
+        self.entry_ratio.config(readonlybackground=self.BG_UNUSED)
 
     def set_shiftrpm(self, val):
         self.shiftrpm.set(int(val))
@@ -235,7 +236,7 @@ class Gear():
     def derive_gearratio(self, fdp):
         if self.state.is_initial():
             self.state.to_next()
-            self.entry_ratio.config(bg=self.BG_REACHED)
+            self.entry_ratio.config(readonlybackground=self.BG_REACHED)
 
         if self.state.at_least_locked():
             return
@@ -272,7 +273,7 @@ class Gear():
         self.variance.set(f'{var:.1e}')
         if var < var_bound and len(self.ratio_deque) == self.DEQUE_LEN:
             self.state.to_next() #implied from reached to locked
-            self.entry_ratio.config(bg=self.BG_LOCKED)
+            self.entry_ratio.config(readonlybackground=self.BG_LOCKED)
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
         
@@ -282,7 +283,7 @@ class Gear():
                                  self.ratio.get() / nextgear.get_ratio())
             self.set_shiftrpm(shiftrpm)
             self.state.to_next()
-            self.entry.config(bg=self.BG_LOCKED)
+            self.entry.config(readonlybackground=self.BG_LOCKED)
 
 #base class for a tkinter GUI that listens to UDP for packets by a forza title
 class ForzaUIBase():
