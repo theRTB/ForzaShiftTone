@@ -15,7 +15,7 @@ While it is intended to run in the background without consideration while drivin
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline.
 - Rev limit can be manually entered or derived from the required run. Defaults to maximum engine rpm minus 750.
 
-![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-4.png)
+![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-6.png)
 
 ## Implementation
 There are three triggers:
