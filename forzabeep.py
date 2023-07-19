@@ -599,7 +599,7 @@ class ForzaBeep(ForzaUIBase):
             i = np.argmin(np.abs(rpms - target_rpm))
             target_torque = self.curve[i].torque
             throttle_pct = max(1, fdp.accel) / 255
-            torque_ratio = throttle_pct * target_torque / fdp.torque
+            torque_ratio = min(throttle_pct * target_torque / fdp.torque, 2)
 
         return (self.lookahead.test(target_rpm, offset, torque_ratio),
                 torque_ratio)
@@ -669,8 +669,8 @@ class Lookahead():
     #from just the linear regression. As RPM is not linear, it will otherwise
     #overestimate consistently.
     def test(self, target_rpm, lookahead, slope_factor=1):
-        if len(self.deque) < 2:
-            return
+        if len(self.deque) < 10 or self.slope <= 0 or slope_factor <= 0:
+            return False
         distance = (target_rpm - self.intercept) / (self.slope * slope_factor)
         return (len(self.deque) > self.minlen and self.slope > 0 and
                 0 <= distance <= lookahead)
