@@ -194,7 +194,7 @@ class GearState():
 class Gear():
     ENTRY_WIDTH = 6
     DEQUE_LEN = 60
-    ROW_COUNT = 4
+    ROW_COUNT = 3
     
     BG_UNUSED = '#F0F0F0'
     BG_REACHED = '#ffffff'
@@ -223,15 +223,11 @@ class Gear():
                                          width=self.ENTRY_WIDTH,
                                          justify=tkinter.RIGHT,
                                          bg=self.BG_UNUSED)
-        self.entry_variance = tkinter.Entry(root, textvariable=self.variance,
-                                         width=self.ENTRY_WIDTH,
-                                         justify=tkinter.RIGHT)
 
         self.label.grid(row=starting_row, column=column)
         if self.gear != 10:
             self.entry.grid(row=starting_row+1, column=column)
         self.entry_ratio.grid(row=starting_row+2, column=column)
-        self.entry_variance.grid(row=starting_row+3, column=column)
 
         self.entry_row = starting_row+1
         self.column = column
@@ -449,7 +445,7 @@ class ForzaBeep(ForzaUIBase):
                                                            column=column+2)
 
     def __init__window(self):
-        for i, text in enumerate(['Gear', 'RPM', 'Ratio', 'Variance']):
+        for i, text in enumerate(['Gear', 'RPM', 'Ratio']):
             tkinter.Label(self.root, text=text, width=7).grid(row=i, column=0)
 
         self.gears = [None] + [Gear(self.root, g, g) for g in range(1, 11)]
