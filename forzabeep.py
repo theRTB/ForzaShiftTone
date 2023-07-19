@@ -535,7 +535,6 @@ class ForzaBeep(ForzaUIBase):
         
         self.shiftdelay_deque.clear()
         
-        self.entry.config()
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
         
         for g in self.gears[1:]:
