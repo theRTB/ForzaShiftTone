@@ -5,16 +5,15 @@ GUI application to provide a shift tone in Forza Horizon 5. This is the first pu
 
 To enable remote telemetry in Forza Horizon 5 on PC for this application: 
 - Head to Settings -> HUD and Gameplay -> scroll down to the bottom
-- Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game. Xbox remote telemetry is to my knowledge broken.
+- Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game. Xbox remote telemetry is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead.
 
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
-- Drive for one second in a single gear on road. After this the gear values will lock and turn green. Road surfaces are far more accurate than dirt/off-road.
+- Drive for over one second in a single gear on road. After this the gear values will lock and turn green. Road surfaces are far more accurate than dirt/off-road.
 - Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts.
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline.
 - Rev limit can be manually entered or derived from the required run. Defaults to maximum engine rpm minus 750.
-- The data is not saved for now. Restarting the application results in a blank state including configuration.
 
-![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-3.png)
+![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-4.png)
 
 ## Implementation
 There are three triggers:
@@ -26,17 +25,18 @@ There are three triggers:
 The delay between beep triggers is currently hardcoded to 0.5 seconds. This time-out is shared between the three triggers.
 
 ## Settings
-The settings are not saved for now. Remote telemetry sends data at 60 packets per second, and the offset variables (Tone offset, revlimit ms) are defined in packets. There is one packet per 16.667 milliseconds, approximately.
+The settings are not saved for now. Restarting the application results in a blank state including configuration.
+Remote telemetry sends data at 60 packets per second. The offset variables (Tone offset, revlimit ms) while defined in milliseconds currently use packet counts in the backend. There is one packet per 16.667 milliseconds, approximately.
 
 ### Per gear:
-- RPM: Derived or manually entered shift rpm value. A value of 99999 means it is inactive.
-- Ratio: Derived or manually entered gear ratio including final ratio.
+- RPM: Derived shift rpm value. This requires the ratio of the current gear and the next gear to be determined (green background)
+- Ratio: Derived gear ratio including final ratio. Final ratio cannot be separately derived.
 
 ### General configuration:
 - Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Can be derived or manually entered.
-- Tone offset: Predicted distance between the beep trigger and the trigger rpm value. This should not be taken as reaction time and minimized. It should be regarded as the time you can consistently respond to the tone with the least amount of mental effort. Defaults to 17 packets (283.3ms)
+- Tone offset: Predicted distance between the beep trigger and the trigger rpm value. This should not be taken as reaction time and minimized. It should be regarded as the time you can consistently respond to the tone with the least amount of mental effort. Defaults to 283 ms.
 - Revlimit %: The respected rev limit in percentage of actual rev limit (currently divided by 100). This is to create a buffer for transients that could cause the engine to cut out due to hitting actual rev limit. Defaults to 0.996 as 99.6%.
-- Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit. Defaults to 5 packets (83ms)
+- Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit. Defaults to 83ms.
+- Volume: Adjusts the volume of the beep. Options are 0dB, -10dB, -20dB, -30dB. Each step is about half as loud as the previous, where 0dB is the loudest and default.
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
 - Reset button: If pressed, reset revlimit and all values for all gears. Configuration values are unchanged. If the UI is unresponsive, restart the application.
-- Volume: Adjusts the volume of the beep. Options are 0dB, -10dB, -20dB, -30dB. Each step is about half as loud as the previous, where 0dB is the loudest and default.
