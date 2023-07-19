@@ -255,28 +255,6 @@ class Gear():
         if self.state.is_final():
             self.state.to_previous()
 
-    def oneshift_handler(self, enabled):
-        if enabled:
-            if self.gear == 1:
-                self.number.set('any')
-            elif self.gear == 10:
-                self.label.grid_remove()
-            else:
-                self.label.grid_remove()
-                self.entry.grid_remove()
-            self.entry_ratio.grid_remove()
-            self.entry_variance.grid_remove()
-        else:
-            if self.gear == 1:
-                self.number.set(f'{self.gear}')
-            elif self.gear == 10:
-                self.label.grid()
-            else:
-                self.label.grid()
-                self.entry.grid()
-            self.entry_ratio.grid()
-            self.entry_variance.grid()
-
     def derive_gearratio(self, fdp):
         if self.state.is_initial():
             self.state.to_next()
@@ -423,7 +401,6 @@ class ForzaBeep(ForzaUIBase):
         self.curve = None
 
         self.rpm = tkinter.IntVar(value=0)
-        # self.oneshift = tkinter.IntVar(value=0)
         self.revlimit = tkinter.IntVar(value=-1)
         self.tone_offset = tkinter.IntVar(value=constants.tone_offset)
         self.revlimit_percent = tkinter.DoubleVar(value=constants.revlimit_percent)
@@ -455,13 +432,6 @@ class ForzaBeep(ForzaUIBase):
         tkinter.Label(self.root, textvariable=self.rpm, width=5,
                       justify=tkinter.RIGHT, anchor=tkinter.E
                       ).grid(row=row, column=0, sticky=tkinter.W)
-
-        # if self.oneshift.get():
-        #     self.oneshift_handler()
-        # tkinter.Checkbutton(self.root, text='Single shift RPM',
-        #                 variable=self.oneshift, command=self.oneshift_handler
-        #             ).grid(row=row, column=2, columnspan=3, sticky=tkinter.W)
-
 
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=2)
         tkinter.Entry(self.root, textvariable=self.revlimit,
@@ -503,10 +473,6 @@ class ForzaBeep(ForzaUIBase):
         
         for g in self.gears[1:]:
             g.reset()
-        
-    def oneshift_handler(self):
-        for gear in self.gears[1:]:
-            gear.oneshift_handler(self.oneshift.get()==1)
 
     def loop_car_ordinal(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
@@ -569,7 +535,7 @@ class ForzaBeep(ForzaUIBase):
             self.shiftdelay_deque.appendleft(fdp)
             return
 
-        #case gear has gone up
+        #case gear has gone up oneshift
         prev_packet = fdp
         shiftrpm = None
         for packet in self.shiftdelay_deque:
@@ -626,9 +592,7 @@ class ForzaBeep(ForzaUIBase):
         if self.we_beeped > 0 and constants.log_full_shiftdata:
             print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {constants.we_beep_max-self.we_beeped+1}')
             self.we_beeped -= 1
-        # if self.oneshift.get():
-        #     beep_rpm = self.gears[1].shiftrpm.get()
-        # else:
+            
         self.gears[gear].derive_gearratio(fdp)
 
         self.loop_beep(fdp, rpm)
