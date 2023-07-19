@@ -1,12 +1,14 @@
 # ForzaBeep
-It beeps, you shift.
+_It beeps, you shift._
 
-GUI application to provide a shift tone in Forza Horizon 5. This is the first public version.
+**GUI application to provide a shift tone in Forza Horizon 5. This is the first public version.**
 
+### Enable remote telemetry / Data out
 To enable remote telemetry in Forza Horizon 5 on PC for this application: 
 - Head to Settings -> HUD and Gameplay -> scroll down to the bottom
 - Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game. Xbox remote telemetry is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead.
 
+## Considerations
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
 - Drive for over one second in a single gear on road. After this the gear values will lock and turn green. Road surfaces are far more accurate than dirt/off-road.
 - Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts.
