@@ -598,20 +598,19 @@ class ForzaBeep(ForzaUIBase):
             rpms = np.array([p.current_engine_rpm for p in self.curve])
             i = np.argmin(np.abs(rpms - target_rpm))
             target_torque = self.curve[i].torque
-            throttle_pct = max(1, fdp.accel) / 255
-            torque_ratio = min(throttle_pct * target_torque / fdp.torque, 2)
+            torque_ratio = target_torque / fdp.torque
 
         return (self.lookahead.test(target_rpm, offset, torque_ratio),
                 torque_ratio)
 
     def test_for_beep(self, shiftrpm, revlimit, fdp):
-        # if fdp.accel < self.MIN_THROTTLE_FOR_BEEP:
-        #     return False
+        if fdp.accel < self.MIN_THROTTLE_FOR_BEEP:
+            return False
         tone_offset = self.tone_offset.get()
 
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
-        from_gear = from_gear and fdp.accel >= self.MIN_THROTTLE_FOR_BEEP
+        # from_gear = from_gear and fdp.accel >= self.MIN_THROTTLE_FOR_BEEP
         
         revlimit_pct, revlimit_pct_ratio = self.torque_ratio_test(
             revlimit*self.revlimit_percent.get(), tone_offset, fdp)
