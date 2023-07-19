@@ -35,7 +35,7 @@ Remote telemetry sends data at 60 packets per second. The offset variables (Tone
 - Ratio: Derived gear ratio including final ratio. Final ratio cannot be separately derived.
 
 ### General configuration:
-- Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Can be derived or manually entered.
+- Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Revlimit is derived upon finishing a full throttle sweep up to revlimit.
 - Tone offset: Predicted distance between the beep trigger and the trigger rpm value. This should not be taken as reaction time and minimized. It should be regarded as the time you can consistently respond to the tone with the least amount of mental effort. Defaults to 283 ms.
 - Revlimit %: The respected rev limit in percentage of actual rev limit (currently divided by 100). This is to create a buffer for transients that could cause the engine to cut out due to hitting actual rev limit. Defaults to 0.996 as 99.6%.
 - Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit. Defaults to 83ms.
