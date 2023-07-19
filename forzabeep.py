@@ -15,15 +15,14 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from collections import deque
 import numpy as np
 
+#tell Windows we are DPI aware. We are not, but this gets around
+#tkinter scaling inconsistently.
 import ctypes
 PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
 from fdp import ForzaDataPacket
-
-#import for ease of debugging
-#import matplotlib.pyplot as plt
 
 class constants():
     ip = '127.0.0.1'
@@ -34,12 +33,13 @@ class constants():
                    -10:'audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
                    -20:'audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
                    -30:'audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
+    
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
 
-    tone_offset = 17
-    revlimit_percent = 0.996
-    revlimit_frames = 5
+    tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
+    revlimit_percent = 0.996 #respected rev limit for trigger revlimit
+    revlimit_frames = 5 #additional margin in packets for revlimit
 
     log_full_shiftdata = True
     
@@ -48,39 +48,7 @@ class constants():
     linreg_len_min = 15
     linreg_len_max = 20 
 
-    we_beep_max = 30
-
-#full throttle
-#max boost all the way
-#collect run up to revlimit if possible
-#revlimit = positive power to negative power to positive power at full throttle and no gear change
-#maybe fine tune revlimit later because it is a multiple of 25 at all times
-#a longer run is preferable, but not required
-
-
-'''
-on a per frame basis:
-WAIT
-wait for throttle to be full
-
-RUN
-IF throttle under full: reset and back to WAIT
-IF throttle at full and power is negative:
-    go to MAYBE_REVLIMIT: we may have hit revlimit, or user has shifted
-collect point otherwise
-
-MAYBE_REVLIMIT
-IF partial throttle OR gear changed: reset and back to WAIT
-IF power is positive and gear unchanged: to TEST
-we test for revlimit by enforcing full throttle
-if the power was positive, goes negative and then positive again we have hit
-the rev limiter.
-
-TEST
-test for validity of run
-boost must be equal for all points
-power at point 0 must be lower or at power at point -1
-'''
+    we_beep_max = 30 #print previous packets for up to x packets after shift
 
 class RunCollector():
     def __init__(self):
@@ -159,7 +127,7 @@ class GearState():
         self.state = self.UNUSED
         
     def __init__(self, label):
-        self.label = label
+        self.label = label #only used for asserts
         self.reset()
     
     def set(self, state):
@@ -194,11 +162,12 @@ class GearState():
         if self.__class__ is other.__class__:
             return self.value >= other.value
         return NotImplemented
-        
+
+#class to hold all variables per individual gear and GUI display
 class Gear():
     ENTRY_WIDTH = 6
     DEQUE_LEN = 60
-    ROW_COUNT = 3
+    ROW_COUNT = 3 #for ForzaBeep: how many rows of variables are present per gear
     
     BG_UNUSED = '#F0F0F0'
     BG_REACHED = '#ffffff'
@@ -255,10 +224,14 @@ class Gear():
     def set_ratio(self, val):
         self.ratio.set(f'{val:.3f}')
 
+    #if we have a new (and better trace) we reduce the state of the gear
+    #to have it recalculate the shiftrpm later
     def newrun_decrease_state(self):
         if self.state.is_final():
             self.state.to_previous()
 
+    #if the clutch is engaged, we can use engine rpm and wheel rotation speed
+    #to derive the ratio between these two: the gear ratio
     def derive_gearratio(self, fdp):
         if self.state.is_initial():
             self.state.to_next()
@@ -311,6 +284,7 @@ class Gear():
             self.state.to_next()
             self.entry.config(bg=self.BG_LOCKED)
 
+#base class for a tkinter GUI that listens to UDP for packets by a forza title
 class ForzaUIBase():
     TITLE = 'ForzaUIBase'
     WIDTH, HEIGHT = 400, 200
@@ -548,7 +522,7 @@ class ForzaBeep(ForzaUIBase):
             self.shiftdelay_deque.appendleft(fdp)
             return
 
-        #case gear has gone up oneshift
+        #case gear has gone up
         prev_packet = fdp
         shiftrpm = None
         for packet in self.shiftdelay_deque:
@@ -612,6 +586,13 @@ class ForzaBeep(ForzaUIBase):
 
        # self.last_fdp = fdp
 
+    #to account for torque not being flat, we take a linear approach
+    #we take the ratio of the current torque and the torque at the shift rpm
+    # if < 1: the overall acceleration will be lower than a naive guess
+    #         therefore, scale the slope down: trigger will happen later
+    # if > 1: the car will accelerate more. This is generally not happen unless
+    # there is partial throttle.
+    #TODO: scale fdp torque by throttle % to avoid erronous beeps
     def torque_ratio_test(self, target_rpm, offset, fdp):
         torque_ratio = 1
         if self.curve and fdp.torque != 0:
@@ -655,6 +636,8 @@ class ForzaBeep(ForzaUIBase):
         #print(f'fromgear {from_gear} revlimitpct {revlimit_pct} revlimit_time {revlimit_time} rpm {self.rpm.get()}')
         return from_gear or revlimit_pct or revlimit_time
 
+#class that maintains a deque used for linear regression. This smooths the rpms
+#and provides a slope to predict future RPM values.
 class Lookahead():
     def __init__(self, minlen, maxlen):
         self.minlen = minlen
@@ -682,6 +665,9 @@ class Lookahead():
         #print(f'target_rpm {target_rpm} slope {slope} intercept {intercept} distance {distance}')
         return distance
 
+    #slope factor is used to shape the prediction with more information than
+    #from just the linear regression. As RPM is not linear, it will otherwise
+    #overestimate consistently.
     def test(self, target_rpm, lookahead, slope_factor=1):
         if len(self.deque) < 2:
             return
@@ -739,145 +725,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-#savitsky-golay
-#Keep in mind that in order to have your Savitzky-Golay filter working properly,
-#you should always choose an odd number for the window size and the order of
-#the polynomial function should always be a number lower than the window size.
-from scipy.signal import savgol_filter
-def apply_savgol(array):
-    window_length = 13
-    polyorder = 2
-    return savgol_filter(array, window_length, polyorder)
-
-#unused lowpass filter code
-#see https://stackoverflow.com/questions/63320705/what-are-order-and-critical-frequency-when-creating-a-low-pass-filter-using
-from scipy.signal import butter, lfilter#, freqz
-def butter_lowpass(cutoff, fs, order=5):
-    return butter(order, cutoff, fs=fs, btype='low', analog=False)
-
-def butter_lowpass_filter(data, cutoff, fs, order=5):
-    b, a = butter_lowpass(cutoff, fs, order=order)
-    y = lfilter(b, a, data)
-    return y
-
-def apply_filter(array):
-    # # Filter requirements.
-    order = 6  #higher is steeper,
-    fs = 60.0       # sample rate, Hz
-    cutoff = 5.00  # desired cutoff frequency of the filter, Hz
-
-    array = np.array(array)
-    base = array[0]
-
-    return butter_lowpass_filter(array - base, cutoff, fs, order) + base
-
-'''
-DONE:
-    - determine revlimit
-    - gather rpm and power until we have a sweep up to revlimit
-    - gather relative ratios between gears
-    - calculate intersections
-    - extrapolate rpm state in x ms based on current fdp
-        - keep deque of ~60 points
-        - per point calculate slope
-        - extrapolate each point to most recent + 283ms?
-
-    - gui variables
-        - Lookahead default 283ms
-        - filename?
-        - delay until next beep?
-        - percentage of revlimit
-        - minimum time to revlimit
-
-        well defined revlimit
-        revlimit is the lowest rpm value for which:
-            - throttle is positive
-            - next fdp throttle is positive
-            - next fdp power is negative
-            - it's not a shift
-              - how do we define it's not a shift
-            - sequence
-              - throttle positive throughout
-              - power is positive < revlimit moment, scale to multiple of 25
-              - power is negative for x frames
-              - power is positive
-        well defined rpm/power graph
-            - must be maximum boost
-            - need a bunch of points 100ish?
-            - low range is barely relevant
-        well defined gear ratios
-         - well defined if variance is low
-         - can we manage a low variance on AWD?
-
-    linear regression on 500-750ms of data
-    clamp upper end
-    suppress beep unless throttle is 100%
-
-    collecting points does not work well
-    swap to collecting runs
-
-# class RPMPowerArray ():
-#     class Point ():
-#         def __init__(self):
-#             self.rpm = -1
-#             self.power = -1
-#             self.boost = -1
-#             self.defined = False
-#             self.n = 0
-
-#         def assign_from(self, fdp):
-#             if not self.defined:
-#                 self.rpm = fdp.current_engine_rpm
-#                 self.power = fdp.power
-#                 self.boost = fdp.boost
-#                 self.n = 1
-#                 self.defined = True
-#             else:
-#                 self.rpm = (fdp.current_engine_rpm + self.rpm) / 2
-#                 self.power = (fdp.power + self.power) / 2 #bias towards recent points
-#                 self.boost = fdp.boost
-
-#         def reset(self):
-#             self.__init__()
-
-#         def __repr__(self):
-#             return f'{self.rpm:.1f} {self.power/1000:.1f} {self.boost:.2f} {self.defined}'
-
-#     def __init__(self, maxrpm):
-#         self.array = [self.Point() for x in range(math.ceil(maxrpm)+1)]
-#         self.count = 0
-
-#     def well_defined(self):
-#         pass
-
-#     def add(self, fdp):
-#         if fdp.accel < 255:
-#             return
-#         rpm = int(fdp.current_engine_rpm)
-#         if fdp.boost < self.boost_lower_bound(rpm):
-#             return
-#         if fdp.power < 0:
-#             return
-#         # if fdp.power < self.array[rpm].power:
-#         #     return
-
-#         self.array[rpm].assign_from(fdp)
-#         self.count += 1
-#         print(f'Points added: {self.count}')
-
-#     def boost_lower_bound(self, rpm):
-#         rpm = int(rpm)
-#         for p in reversed(self.array[:rpm+1]):
-#             if not p.defined:
-#                 next
-#             return p.boost
-#         return -15
-
-#     def reset(self):
-#         for p in self.array:
-#             p.reset()
-
-#     def __repr__(self):
-#         return '|'.join([str(p) for p in self.array])
-'''
