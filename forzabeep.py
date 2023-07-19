@@ -169,6 +169,8 @@ class Gear():
     DEQUE_LEN = 60
     ROW_COUNT = 3 #for ForzaBeep: how many rows of variables are present per gear
     
+    DEFAULT_GUI_VALUE = 'N/A'
+    
     BG_UNUSED = '#F0F0F0'
     BG_REACHED = '#ffffff'
     BG_LOCKED = '#ccddcc'
@@ -215,6 +217,11 @@ class Gear():
         self.variance.set('0')
         self.entry.config(readonlybackground=self.BG_UNUSED)
         self.entry_ratio.config(readonlybackground=self.BG_UNUSED)
+
+    def get_shiftrpm(self):
+        if self.shiftrpm.get() == self.DEFAULT_GUI_VALUE:
+            return 99999
+        return self.shiftrpm.get()
 
     def set_shiftrpm(self, val):
         self.shiftrpm.set(int(val))
@@ -534,7 +541,7 @@ class ForzaBeep(ForzaUIBase):
                 break
             prev_packet = packet
         if shiftrpm is not None:
-            optimal = self.gears[fdp.gear-1].shiftrpm.get()
+            optimal = self.gears[fdp.gear-1].get_shiftrpm()
             if constants.log_full_shiftdata:
                 print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference")
                 print("-"*50)
@@ -542,7 +549,7 @@ class ForzaBeep(ForzaUIBase):
             self.shiftdelay_deque.clear() #TODO: test if moving this out of the if works better
 
     def loop_beep(self, fdp, rpm):
-        beep_rpm = self.gears[int(fdp.gear)].shiftrpm.get()
+        beep_rpm = self.gears[int(fdp.gear)].get_shiftrpm()
         if self.beep_counter <= 0:
             if self.test_for_beep(beep_rpm, self.revlimit.get(), fdp):
                 self.beep_counter = constants.beep_counter_max
