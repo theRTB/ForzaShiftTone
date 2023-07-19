@@ -592,14 +592,14 @@ class ForzaBeep(ForzaUIBase):
     #         therefore, scale the slope down: trigger will happen later
     # if > 1: the car will accelerate more. This is generally not happen unless
     # there is partial throttle.
-    #TODO: scale fdp torque by throttle % to avoid erronous beeps
     def torque_ratio_test(self, target_rpm, offset, fdp):
         torque_ratio = 1
         if self.curve and fdp.torque != 0:
             rpms = np.array([p.current_engine_rpm for p in self.curve])
             i = np.argmin(np.abs(rpms - target_rpm))
             target_torque = self.curve[i].torque
-            torque_ratio = target_torque / fdp.torque
+            throttle_pct = max(1, fdp.accel) / 255
+            torque_ratio = throttle_pct * target_torque / fdp.torque
 
         return (self.lookahead.test(target_rpm, offset, torque_ratio),
                 torque_ratio)
