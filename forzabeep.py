@@ -178,26 +178,25 @@ class Gear():
     def __init__(self, root, number, column, starting_row=0):
         self.gear = number
         self.number = tkinter.StringVar(value=f'{number}')
-        self.shiftrpm = tkinter.IntVar(value=99999)
-
-        self.ratio = tkinter.DoubleVar(value='0.000')
-        self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
         self.state = GearState(label=f'Gear {number}')
-
-        self.variance = tkinter.DoubleVar(value='0')
+        self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
+        
+        self.shiftrpm = 99999
+        self.shiftrpm_var = tkinter.StringVar()
+        self.ratio = tkinter.DoubleVar()
+        self.variance = tkinter.DoubleVar()
 
         self.__init__window(root, column, starting_row)
+        self.reset()
 
     def init_gui_entry(self, root, variable):
-        return tkinter.Entry(root, textvariable=variable, 
-                             state='readonly', 
+        return tkinter.Entry(root, textvariable=variable, state='readonly', 
                              width=self.ENTRY_WIDTH, justify=tkinter.RIGHT)
-                             # , bg=self.BG_UNUSED)
 
     def __init__window(self, root, column, starting_row):
         self.label = tkinter.Label(root, textvariable=self.number,
                                    width=self.ENTRY_WIDTH)
-        self.entry = self.init_gui_entry(root, self.shiftrpm)
+        self.entry = self.init_gui_entry(root, self.shiftrpm_var)
         self.entry_ratio = self.init_gui_entry(root, self.ratio)
 
         self.label.grid(row=starting_row, column=column)
@@ -209,22 +208,22 @@ class Gear():
         self.column = column
 
     def reset(self):
-        self.set_shiftrpm(99999)
+        self.shiftrpm = 99999
+        self.shiftrpm_var.set(self.DEFAULT_GUI_VALUE)
         self.set_ratio(0)
         self.ratio_deque.clear()
         self.state.reset()
 
-        self.variance.set('0')
+        self.variance.set(0)
         self.entry.config(readonlybackground=self.BG_UNUSED)
         self.entry_ratio.config(readonlybackground=self.BG_UNUSED)
 
     def get_shiftrpm(self):
-        if self.shiftrpm.get() == self.DEFAULT_GUI_VALUE:
-            return 99999
-        return self.shiftrpm.get()
+        return self.shiftrpm
 
     def set_shiftrpm(self, val):
-        self.shiftrpm.set(int(val))
+        self.shiftrpm = int(val)
+        self.shiftrpm_var.set(self.shiftrpm)
 
     def get_ratio(self):
         return self.ratio.get()
