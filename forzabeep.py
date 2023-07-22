@@ -308,7 +308,6 @@ class ForzaUIBase():
     def __init__(self):
         self.threadPool = ThreadPoolExecutor(max_workers=8,
                                              thread_name_prefix="exec")
-        # self.listener = Listener(on_press=self.on_press)
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.settimeout(1)
@@ -323,17 +322,13 @@ class ForzaUIBase():
 
         # self.__init__window()
 
-    # def __init__vars(self):
-    #     print("base __init__vars got called")
-    #     pass
-
-    # def __init__window(self):
-    #     print("base __init__window got called")
-    #     if self.active.get():
-    #         self.active_handler()
-    #     tkinter.Checkbutton(self.root, text='Active',
-    #                         variable=self.active, command=self.active_handler
-    #                         ).pack()
+        # def __init__window(self):
+        #     if self.active.get():
+        #         self.active_handler()
+        #     tkinter.Checkbutton(self.root, text='Active',
+        #                         variable=self.active, 
+        #                         command=self.active_handler).pack()
+        #     self.mainloop()
 
     def mainloop(self):
         self.root.mainloop()
@@ -370,7 +365,6 @@ class ForzaUIBase():
         self.isRunning = False
         self.threadPool.shutdown(wait=False)
         self.server_socket.close()
-     #   self.listener.stop()
         self.root.destroy()
 
 class ForzaBeep(ForzaUIBase):
@@ -522,14 +516,6 @@ class ForzaBeep(ForzaUIBase):
         self.__init_spinbox_tone_offset(row, column=0)
         self.__init_spinbox_revlimit_percent(row, column=3)
         self.__init_spinbox_revlimit_offset(row, column=6)
-        
-        
-        # self.init_gui_variable('Revlimit %', self.revlimit_percent, row, 3)
-       # self.init_gui_variable('Revlimit ms', self.revlimit_offset, row, 6)
-        # tkinter.Label(self.root, text='Tone offset').grid(row=row, column=1,
-        #                                                   columnspan=2)
-        # tkinter.Entry(self.root, textvariable=self.tone_offset,
-        #               width=6, justify=tkinter.RIGHT).grid(row=row, column=3)
 
     def reset(self, *args):
         self.runcollector.reset()
@@ -613,7 +599,7 @@ class ForzaBeep(ForzaUIBase):
 
             for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
                 g1.calculate_shiftrpm(rpm, power, g2)
-               #     print(f"gear {g1.gear} shiftrpm set: {shiftrpm}")
+                # print(f"gear {g1.gear} shiftrpm set: {shiftrpm}")
 
     #we assume power is negative between gear change and first frame of shift
     #accel has to be positive at all times, otherwise we don't know for sure
@@ -689,8 +675,6 @@ class ForzaBeep(ForzaUIBase):
 
         self.loop_beep(fdp, rpm)
 
-       # self.last_fdp = fdp
-
     #to account for torque not being flat, we take a linear approach
     #we take the ratio of the current torque and the torque at the shift rpm
     # if < 1: the overall acceleration will be lower than a naive guess
@@ -722,12 +706,6 @@ class ForzaBeep(ForzaUIBase):
         revlimit_time, revlimit_time_ratio = self.torque_ratio_test(
             revlimit, (tone_offset + self.get_revlimit_offset()), fdp)
 
-        # from_gear = self.lookahead.test(shiftrpm, tone_offset)
-        # revlimit_pct = self.lookahead.test(revlimit*self.revlimit_percent.get()
-        #                                    , tone_offset)
-        # revlimit_time = self.lookahead.test(revlimit, (tone_offset +
-        #                                            self.revlimit_offset.get()))
-
         if from_gear and constants.log_full_shiftdata:
             print(f'beep from_gear: {shiftrpm}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {from_gear_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
@@ -737,7 +715,6 @@ class ForzaBeep(ForzaUIBase):
         if revlimit_time and constants.log_full_shiftdata:
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
-        #print(f'fromgear {from_gear} revlimitpct {revlimit_pct} revlimit_time {revlimit_time} rpm {self.rpm.get()}')
         return from_gear or revlimit_pct or revlimit_time
 
 #class that maintains a deque used for linear regression. This smooths the rpms
