@@ -369,7 +369,7 @@ class ForzaUIBase():
 
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
-    WIDTH, HEIGHT = 785, 205
+    WIDTH, HEIGHT = 745, 215
 
     MAXGEARS = 10
 
@@ -398,6 +398,8 @@ class ForzaBeep(ForzaUIBase):
         self.rpm = tkinter.IntVar(value=0)
         self.revlimit = -1
         self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
+        
+        self.edit_var = tkinter.IntVar(value=0)
         self.tone_offset = constants.tone_offset
         self.revlimit_percent = constants.revlimit_percent
         self.revlimit_offset = constants.revlimit_offset
@@ -413,17 +415,21 @@ class ForzaBeep(ForzaUIBase):
         self.car_ordinal = None
 
     
-    def __init_spinbox(self, name, value, spinbox_dict, row, column):
-        label = tkinter.Label(self.root, text=name)
+    def __init_spinbox(self, name, value, unit, spinbox_dict, row, column=0):
+        label = tkinter.Label(self.buffer_frame, text=name)
+        unit = tkinter.Label(self.buffer_frame, text=unit)
                  
         var = tkinter.StringVar()  
-        spinbox = tkinter.Spinbox(self.root, state='readonly',
+        spinbox = tkinter.Spinbox(self.buffer_frame, state='readonly',
                         width=5, justify=tkinter.RIGHT, textvariable=var,
-                        readonlybackground='#FFFFFF', **spinbox_dict)
-
-        var.set(value)
-        label.grid(row=row, column=column, columnspan=2, sticky='E')
-        spinbox.grid(row=row, column=column+2)
+                        readonlybackground='#FFFFFF', 
+                        disabledbackground='#FFFFFF',
+                        **spinbox_dict)
+        var.set(value) #force spinbox to initial value
+        
+        label.grid(row=row, column=column, sticky='E')
+        spinbox.grid(row=row, column=column+1)
+        unit.grid(row=row, column=column+2)
         return spinbox
         
     def get_tone_offset(self):
@@ -434,14 +440,15 @@ class ForzaBeep(ForzaUIBase):
     def update_tone_offset(self):
         self.tone_offset = round(60*int(self.tone_offset_gui.get())/1000, 0)
         
-    def __init_spinbox_tone_offset(self, row, column):
-        name = 'Tone offset (ms)'
+    def __init_spinbox_tone_offset(self, row, column=0):
+        name = 'Tone offset'
         spinbox_dict = {'values':[int(1000*x/60) for x in range(10, 22)],
                         'command':self.update_tone_offset}
         value = int(1000*constants.tone_offset/60)
+        unit = 'ms'
         
-        self.tone_offset_gui = self.__init_spinbox(name, value, spinbox_dict, 
-                                                   row, column)
+        self.tone_offset_gui = self.__init_spinbox(name, value, unit, 
+                                                   spinbox_dict, row, column)
 
     def get_revlimit_percent(self):
         return self.revlimit_percent
@@ -449,15 +456,15 @@ class ForzaBeep(ForzaUIBase):
     def update_revlimit_percent(self):
         self.revlimit_percent = float(self.revlimit_percent_gui.get())/100
         
-    def __init_spinbox_revlimit_percent(self, row, column):
-        name = 'Revlimit (%)'
+    def __init_spinbox_revlimit_percent(self, row, column=0):
+        name = 'Revlimit'
         spinbox_dict = {'values':[x/10 for x in range(950, 999)],
                         'command':self.update_revlimit_percent}
         value = round(100*constants.revlimit_percent, 1)
+        unit = '%'
         
-        self.revlimit_percent_gui = self.__init_spinbox(name, value, 
-                                                        spinbox_dict, 
-                                                        row, column)
+        self.revlimit_percent_gui = self.__init_spinbox(name, value, unit, 
+                                                   spinbox_dict, row, column)
 
     def get_revlimit_offset(self):
         return self.revlimit_offset
@@ -466,56 +473,91 @@ class ForzaBeep(ForzaUIBase):
         gui_val = self.revlimit_offset_gui.get()
         self.revlimit_offset = round(60*int(gui_val)/1000,0)
         
-    def __init_spinbox_revlimit_offset(self, row, column):
-        name = 'Revlimit (ms)'
+    def __init_spinbox_revlimit_offset(self, row, column=0):
+        name = 'Revlimit'
         spinbox_dict = {'values':[int(1000*x/60) for x in range(2, 8)],
                         'command':self.update_revlimit_offset}
         value = int(1000*constants.revlimit_offset/60)
+        unit = 'ms'
         
-        self.revlimit_offset_gui = self.__init_spinbox(name, value, 
-                                                       spinbox_dict, 
-                                                       row, column)
+        self.revlimit_offset_gui = self.__init_spinbox(name, value, unit, 
+                                                   spinbox_dict, row, column)
 
     def __init__window(self):
-        for i, text in enumerate(['Gear', 'Shift RPM', 'Ratio', 'RPM:']):
-            tkinter.Label(self.root, text=text, width=8, anchor=tkinter.E
+        for i, text in enumerate(['Gear', 'Target', 'Ratio']):
+            tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
                           ).grid(row=i, column=0)
 
         self.gears = [None] + [Gear(self.root, g, g) for g in range(1, 11)]
 
         row = Gear.ROW_COUNT
 
-        tkinter.Label(self.root, textvariable=self.rpm, width=5,
-                      justify=tkinter.RIGHT, anchor=tkinter.E
-                      ).grid(row=row, column=1, sticky=tkinter.W)
 
-        tkinter.Label(self.root, text='Revlimit').grid(row=row, column=3)
+        tkinter.Label(self.root, text='Revlimit').grid(row=row, column=0,
+                                                       sticky=tkinter.E)
         self.revlimit_entry = tkinter.Entry(self.root, width=6, 
-                                            state='readonly', 
+                                            state='readonly',
                                             justify=tkinter.RIGHT,
                                             textvariable=self.revlimit_var)
-        self.revlimit_entry.grid(row=row, column=4)
+        self.revlimit_entry.grid(row=row, column=1)
+        tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
+                                                  sticky=tkinter.W)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
-        resetbutton.grid(row=row, column=5)
+        resetbutton.grid(row=row, column=3, rowspan=2)
         resetbutton.bind('<Button-1>', self.reset)
 
+
+        tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
+                      from_=0, to=-30, variable=self.volume, resolution=10
+                      ).grid(row=row, column=10, columnspan=1, rowspan=3,
+                             sticky=tkinter.E)
+        
+        self.buffer_frame = tkinter.LabelFrame(self.root, text='Buffers')
+        self.buffer_frame.grid(row=row, column=6, rowspan=3, columnspan=3)
+        
+        self.__init_spinbox_revlimit_percent(0)
+        self.__init_spinbox_revlimit_offset(1)
+        self.__init_spinbox_tone_offset(2)
+        
+        row += 1 #continue on next row
+ 
+        tkinter.Label(self.root, text='Volume').grid(row=row, column=9, 
+                                                     columnspan=2)
+       
+
+        row += 1 #continue on next row
+        
+        tkinter.Label(self.root, text='Tach').grid(row=row, column=0, 
+                                                  sticky=tkinter.E)     
+        tkinter.Entry(self.root, textvariable=self.rpm, width=6,
+                      justify=tkinter.RIGHT, state='readonly'
+                      ).grid(row=row, column=1, sticky=tkinter.W)
+        tkinter.Label(self.root, text='RPM').grid(row=row, column=2, 
+                                                  sticky=tkinter.W) 
+        
         if self.active.get():
             self.active_handler()
         tkinter.Checkbutton(self.root, text='Active',
                             variable=self.active, command=self.active_handler
-                            ).grid(row=row, column=6, columnspan=2,
+                            ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
-                                   
-        tkinter.Scale(self.root, label='Volume dB', orient=tkinter.HORIZONTAL,
-                      from_=0, to=-30, variable=self.volume, resolution=10
-                      ).grid(row=row, column=9, columnspan=2, rowspan=2)
-        
-        row += 1 #continue on next row
-        
-        self.__init_spinbox_tone_offset(row, column=0)
-        self.__init_spinbox_revlimit_percent(row, column=3)
-        self.__init_spinbox_revlimit_offset(row, column=6)
+                               
+        tkinter.Checkbutton(self.root, text='Edit',
+                            variable=self.edit_var, command=self.edit_handler
+                            ).grid(row=row, column=5, columnspan=2,
+                                   sticky=tkinter.W)    
+        self.edit_handler()
+
+    def edit_handler(self):
+        if self.edit_var.get():
+            for var in [self.revlimit_offset_gui, self.revlimit_percent_gui, 
+                        self.tone_offset_gui]:
+                var.config(state='readonly')
+        else:
+            for var in [self.revlimit_offset_gui, self.revlimit_percent_gui, 
+                        self.tone_offset_gui]:
+                var.config(state=tkinter.DISABLED)
 
     def reset(self, *args):
         self.runcollector.reset()
