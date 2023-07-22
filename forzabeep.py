@@ -107,6 +107,16 @@ class RunCollector():
     def run_completed(self):
         return self.state == 'DONE'
 
+    def get_revlimit_if_done(self):
+        if self.state != 'DONE':
+            return None
+        return self.run[-1].current_engine_rpm
+    
+    def get_gear(self):
+        if self.gear_collected == -1:
+            return None
+        return self.gear_collected
+
     def get_run(self):
         return self.run
 
@@ -561,34 +571,35 @@ class ForzaBeep(ForzaUIBase):
             print(f"Ordinal changed to {self.car_ordinal}, resetting!")
 
     #grab curve if we collected a complete run
-    #update curve if we collected a run in a higher gear
-    #we can assume that this leads to a more accurate run with a better
-    #rev limit defined
+    #update curve if we collected a run in an equal or higher gear
+    #we test if this leads to a more accurate run with a better rev limit 
+    #defined
     def loop_runcollector(self, fdp):
         self.runcollector.update(fdp)
 
-        if self.runcollector.run_completed():
-            if self.curve is None:
-            #    print("FIRST RUN DONE!")
+        if not self.runcollector.run_completed():
+            return
+            
+        if self.curve is None:
+            # print("FIRST RUN DONE!")
+            self.curve = self.runcollector.get_run()
+            self.set_revlimit(self.curve[-1].current_engine_rpm)
+            self.revlimit_entry.configure(
+                                readonlybackground=self.REVLIMIT_BG_CURVE)
+            # print(f'revlimit set: {self.revlimit.get()}')
+        elif (self.runcollector.get_revlimit_if_done() > self.get_revlimit()
+              and self.runcollector.get_gear() >= self.curve[0].gear):
+                # print(f"NEW RUN DONE! len {len(newrun)} gear is higher")
                 self.curve = self.runcollector.get_run()
                 self.set_revlimit(self.curve[-1].current_engine_rpm)
-                self.revlimit_entry.configure(
-                                    readonlybackground=self.REVLIMIT_BG_CURVE)
-            #    print(f'revlimit set: {self.revlimit.get()}')
-            else:
-                newrun = self.runcollector.get_run()
-                if self.curve[0].gear < newrun[0].gear:
-                #    print(f"NEW RUN DONE! len {len(newrun)} gear is higher")
-                    self.curve = newrun
-                    self.set_revlimit(self.curve[-1].current_engine_rpm)
-                    for g in self.gears[1:]:
-                        g.newrun_decrease_state()
-                            #print(f"Gear {g.gear} reset to LOCKED")
-              #      print(f'revlimit set: {self.revlimit.get()}')
-                else:
-                    pass
-               #     print(f"NEW RUN DONE! len {len(newrun)} gear not higher: discarded")
-            self.runcollector.reset()
+                for g in self.gears[1:]:
+                    g.newrun_decrease_state() #force recalculation of rpm
+                    # print(f"Gear {g.gear} reset to LOCKED")
+                # print(f'revlimit set: {self.revlimit.get()}')
+        else:
+            pass
+            # print(f"NEW RUN DONE! len {len(newrun)} gear lower or revlimit lower: discarded")
+        self.runcollector.reset()
 
     def loop_calculate_shiftrpms(self):
         if self.curve is not None:
