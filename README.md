@@ -21,7 +21,7 @@ While it is intended to run in the background without consideration while drivin
 There are three triggers:
 - Shift RPM: The RPM value in which power in the next gear becomes equal or higher to the power in the current gear. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep.
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit.
-  - Example: A rev limit of 7850 and a value of 0.996 triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds.
+  - Example: A rev limit of 7850 and a value of 99.6% triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds.
 - Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 367 milliseconds.
 
 The delay between beep triggers is currently hardcoded to 0.5 seconds. This time-out is shared between the three triggers.
@@ -37,8 +37,10 @@ Remote telemetry sends data at 60 packets per second. The offset variables (Tone
 ### General configuration:
 - Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Revlimit is derived upon finishing a full throttle sweep up to revlimit.
 - Tone offset: Predicted distance between the beep trigger and the trigger rpm value. This should not be taken as reaction time and minimized. It should be regarded as the time you can consistently respond to the tone with the least amount of mental effort. Defaults to 283 ms.
-- Revlimit %: The respected rev limit in percentage of actual rev limit (currently divided by 100). This is to create a buffer for transients that could cause the engine to cut out due to hitting actual rev limit. Defaults to 0.996 as 99.6%.
-- Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit. Defaults to 83ms.
-- Volume: Adjusts the volume of the beep. Options are 0dB, -10dB, -20dB, -30dB. Each step is about half as loud as the previous, where 0dB is the loudest and default.
+- Revlimit %: The respected rev limit in percentage of actual rev limit. This is to create a buffer for transients that could cause the engine to cut out due to hitting actual rev limit. Defaults to 99.6%.
+- Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit, such as in first gear. Defaults to 83ms.
+- Volume: Adjusts the volume of the beep in four steps total. Each step is about half as loud as the previous, where the loudest is the default.
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
+- Edit tickbox: If unticked, the up and down arrows for the Tone offset and Revlimit ms/% values do not function. This is to avoid accidental clicks.
 - Reset button: If pressed, reset revlimit and all values for all gears. Configuration values are unchanged. If the UI is unresponsive, restart the application.
+
