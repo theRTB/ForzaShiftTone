@@ -595,7 +595,6 @@ class ForzaBeep(ForzaUIBase):
 
             #filter rpm and power
             #sort according to rpm?
-            #filter power
 
             for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
                 g1.calculate_shiftrpm(rpm, power, g2)
