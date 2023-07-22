@@ -469,7 +469,8 @@ class ForzaBeep(ForzaUIBase):
         return self.revlimit_offset
     
     def update_revlimit_offset(self):
-        self.revlimit_ms = round(60*int(self.revlimit_ms_gui.get())/1000, 0)
+        gui_val = self.revlimit_offset_gui.get()
+        self.revlimit_offset = round(60*int(gui_val)/1000,0)
         
     def __init_spinbox_revlimit_offset(self, row, column):
         name = 'Revlimit (ms)'
