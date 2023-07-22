@@ -13,7 +13,7 @@ While it is intended to run in the background without consideration while drivin
 - Drive for over one second in a single gear on road. After this the gear values will lock and turn green. Road surfaces are far more accurate than dirt/off-road.
 - Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts.
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline.
-- Rev limit can be manually entered or derived from the required run. Defaults to maximum engine rpm minus 750.
+- a more accurate rev limit is derived from the required run. Defaults to maximum engine rpm minus 750.
 
 ![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-6.png)
 
