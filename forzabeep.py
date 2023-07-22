@@ -694,7 +694,7 @@ class ForzaBeep(ForzaUIBase):
     #we take the ratio of the current torque and the torque at the shift rpm
     # if < 1: the overall acceleration will be lower than a naive guess
     #         therefore, scale the slope down: trigger will happen later
-    # if > 1: the car will accelerate more. This is generally not happen unless
+    # if > 1: the car will accelerate more. This generally cannot happen unless
     # there is partial throttle.
     def torque_ratio_test(self, target_rpm, offset, fdp):
         torque_ratio = 1
