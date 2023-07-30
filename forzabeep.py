@@ -38,8 +38,8 @@ class constants():
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
 
     tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
-    tone_offset_lower = 10
-    tone_offset_upper = 22
+    tone_offset_lower =  9
+    tone_offset_upper = 25
     
     revlimit_percent = 0.996 #respected rev limit for trigger revlimit
     revlimit_percent_lower = 0.950
@@ -49,7 +49,8 @@ class constants():
     revlimit_offset_lower = 3
     revlimit_offset_upper = 8
     
-    log_full_shiftdata = True
+    log_full_shiftdata = False
+    log_basic_shiftdata = True
     
     #as rpm ~ speed, and speed ~ tanh, linear regression + extrapolation 
     #overestimates slope and intercept. Keeping the deque short limits this
@@ -392,17 +393,18 @@ class GUIConfigVariable(ConfigVariable):
         gui_value = convert_to_gui(value)
         values_gui = list(map(convert_to_gui, values))
         self.convert_from_gui = convert_from_gui
+        self.convert_to_gui = convert_to_gui
                  
         label = tkinter.Label(root, text=name)
         unit = tkinter.Label(root, text=unit)        
-        var = tkinter.StringVar()  
+        self.var = tkinter.StringVar()  
         self.spinbox = tkinter.Spinbox(root, state='readonly', width=5, 
                                        justify=tkinter.RIGHT, 
-                                       textvariable=var,
+                                       textvariable=self.var,
                                        readonlybackground='#FFFFFF', 
                                        disabledbackground='#FFFFFF',
                                        values=values_gui, command=self.update)
-        var.set(gui_value) #force spinbox to initial value
+        self.var.set(gui_value) #force spinbox to initial value
         
         label.grid(       row=row, column=column,   sticky=tkinter.E)
         self.spinbox.grid(row=row, column=column+1)
@@ -413,6 +415,14 @@ class GUIConfigVariable(ConfigVariable):
     
     def gui_get(self):
         return self.spinbox.get()
+    
+    def gui_set(self, val):
+        self.var.set(val)
+        
+    def set(self, val):
+        super().set(val)
+        val_gui = self.convert_to_gui(val)
+        self.gui_set(val_gui)
         
     def update(self):
         val_gui = self.gui_get()
@@ -430,7 +440,7 @@ class GUIConfigVariable_ToneOffset(GUIConfigVariable):
                          convert_from_gui=ms_to_packets, 
                          convert_to_gui=packets_to_ms, value=self.DEFAULTVALUE,
                          values=range(self.LOWER, self.UPPER+1))
-
+    
 
 class GUIConfigVariable_RevlimitOffset(GUIConfigVariable):
     NAME = 'Revlimit'
@@ -459,6 +469,64 @@ class GUIConfigVariable_RevlimitPercent(GUIConfigVariable):
                          values=np.arange(self.LOWER, self.UPPER, 0.001),
                          value=self.DEFAULTVALUE)
 
+#maintain a rolling array of the time between beep and actual shift
+#caps to 2x the default tone offset to avoid outliers
+#depends on ForzaBeep loop_test_for_shiftrpm and loop_beep
+#
+class DynamicToneOffset():
+    DEQUE_MIN, DEQUE_MAX = 35, 75
+    
+    DEFAULT = constants.tone_offset
+    OFFSET_LOWER = constants.tone_offset_lower
+    OFFSET_UPPER = constants.tone_offset_upper
+    
+    def __init__(self, tone_offset_var, *args, **kwargs):
+        self.counter = None
+        self.offset = self.DEFAULT
+        self.deque = deque([self.DEFAULT]*self.DEQUE_MIN, 
+                                  maxlen=self.DEQUE_MAX)
+        self.deque_min_counter = 0
+        self.tone_offset_var = tone_offset_var
+    
+    def start_counter(self):
+        #assert self.counter is None
+        self.counter = 0
+    
+    def increment_counter(self):
+        if self.counter is not None:
+            self.counter += 1
+            
+    def decrement_counter(self):
+        if self.counter is not None:
+            self.counter -= 1
+    
+    def finish_counter(self):
+        if self.counter is None:
+            return
+        if self.deque_min_counter <= self.DEQUE_MIN:
+            self.deque.popleft()
+        else:
+            self.deque_min_counter += 1
+        value = min(self.OFFSET_UPPER, self.counter)
+        value = max(self.OFFSET_LOWER, value)
+        self.deque.append(value)
+        average = statistics.mean(self.deque)
+        print(f'DynamicToneOffset: offset {self.offset} new average {average:.2f}')
+        average = int(round(average, 0))
+        if average != self.offset:
+            self.offset = average
+            self.apply_offset()
+        self.reset_counter()
+    
+    def apply_offset(self):
+        self.tone_offset_var.set(self.offset)
+    
+    def get_counter(self):
+        return self.counter
+        
+    def reset_counter(self):
+        self.counter = None
+
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
     WIDTH, HEIGHT = 745, 215
@@ -479,6 +547,7 @@ class ForzaBeep(ForzaUIBase):
         super().__init__()
         self.__init__vars()
         self.__init__window()
+        self.__init__vars_postwindow()
         self.mainloop()
 
     def __init__vars(self):
@@ -502,6 +571,9 @@ class ForzaBeep(ForzaUIBase):
         self.shiftdelay_deque = deque(maxlen=120)
 
         self.car_ordinal = None
+
+    def __init__vars_postwindow(self):
+        self.dynamicoffset = DynamicToneOffset(self.tone_offset)
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Buffers')
@@ -593,6 +665,7 @@ class ForzaBeep(ForzaUIBase):
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
         
         self.shiftdelay_deque.clear()
+        self.dynamicoffset.reset_counter()
         
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
         
@@ -670,6 +743,7 @@ class ForzaBeep(ForzaUIBase):
                 self.shiftdelay_deque[0].gear >= fdp.gear or
                 self.shiftdelay_deque[0].gear == 0): #case gear reverse
             self.shiftdelay_deque.appendleft(fdp)
+            self.dynamicoffset.increment_counter()
             return
 
         #case gear has gone up
@@ -682,13 +756,20 @@ class ForzaBeep(ForzaUIBase):
                 shiftrpm = packet.current_engine_rpm
                 break
             prev_packet = packet
+            self.dynamicoffset.decrement_counter()
         if shiftrpm is not None:
             optimal = self.gears[fdp.gear-1].get_shiftrpm()
-            if constants.log_full_shiftdata:
-                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference")
+            beep_distance = self.dynamicoffset.get_counter()
+            self.dynamicoffset.finish_counter()
+            beep_distance_ms = 'N/A'
+            if beep_distance is not None:
+                beep_distance_ms = packets_to_ms(beep_distance)
+            if constants.log_basic_shiftdata:
+                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
-            self.we_beeped = 0
-            self.shiftdelay_deque.clear() #TODO: test if moving this out of the if works better
+        self.we_beeped = 0
+        self.shiftdelay_deque.clear() #TODO: test if moving this out of the if works better
+        self.dynamicoffset.reset_counter()
 
     def loop_beep(self, fdp, rpm):
         beep_rpm = self.gears[int(fdp.gear)].get_shiftrpm()
@@ -696,6 +777,7 @@ class ForzaBeep(ForzaUIBase):
             if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
                 self.beep_counter = constants.beep_counter_max
                 self.we_beeped = constants.we_beep_max
+                self.dynamicoffset.start_counter()
                 beep(filename=self.get_soundfile())
             elif rpm < math.ceil(beep_rpm*constants.beep_rpm_pct):
                 self.beep_counter = 0
