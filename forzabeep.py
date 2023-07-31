@@ -49,6 +49,9 @@ class constants():
     revlimit_offset_lower = 3
     revlimit_offset_upper = 8
     
+    hysteresis = 1
+    hysteresis_steps = [0, 1, 5, 25, 50, 100, 250, 500]
+    
     log_full_shiftdata = False
     log_basic_shiftdata = True
     
@@ -397,7 +400,7 @@ class GUIConfigVariable(ConfigVariable):
                  
         label = tkinter.Label(root, text=name)
         unit = tkinter.Label(root, text=unit)        
-        self.var = tkinter.StringVar()  
+        self.var = tkinter.IntVar()  
         self.spinbox = tkinter.Spinbox(root, state='readonly', width=5, 
                                        justify=tkinter.RIGHT, 
                                        textvariable=self.var,
@@ -414,7 +417,7 @@ class GUIConfigVariable(ConfigVariable):
         self.spinbox.config(*args, **kwargs)
     
     def gui_get(self):
-        return self.spinbox.get()
+        return self.var.get()
     
     def gui_set(self, val):
         self.var.set(val)
@@ -467,6 +470,18 @@ class GUIConfigVariable_RevlimitPercent(GUIConfigVariable):
                          convert_from_gui=percent_to_factor, 
                          convert_to_gui=factor_to_percent, 
                          values=np.arange(self.LOWER, self.UPPER, 0.001),
+                         value=self.DEFAULTVALUE)
+
+class GUIConfigVariable_Hysteresis(GUIConfigVariable):
+    NAME = 'Hysteresis'
+    DEFAULTVALUE = constants.hysteresis
+    UNIT = 'rpm'
+    
+    def __init__(self, root, row, column=0):
+        super().__init__(root=root, name=self.NAME, unit=self.UNIT, row=row,
+                         convert_from_gui=lambda x: x, column=column,
+                         convert_to_gui=lambda x: x, 
+                         values=constants.hysteresis_steps,
                          value=self.DEFAULTVALUE)
 
 #maintain a rolling array of the time between beep and actual shift
@@ -529,7 +544,7 @@ class DynamicToneOffset():
 
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
-    WIDTH, HEIGHT = 745, 215
+    WIDTH, HEIGHT = 745, 255
 
     MAXGEARS = 10
 
@@ -569,6 +584,8 @@ class ForzaBeep(ForzaUIBase):
                                    constants.linreg_len_max)
 
         self.shiftdelay_deque = deque(maxlen=120)
+        
+        self.hysteresis_rpm = 0
 
         self.car_ordinal = None
 
@@ -576,12 +593,19 @@ class ForzaBeep(ForzaUIBase):
         self.dynamicoffset = DynamicToneOffset(self.tone_offset)
 
     def __init__window_buffers_frame(self, row):
-        frame = tkinter.LabelFrame(self.root, text='Buffers')
-        frame.grid(row=row, column=6, rowspan=3, columnspan=3)
+        frame = tkinter.LabelFrame(self.root, text='Buffers / Configurables')
+        frame.grid(row=row, column=5, rowspan=4, columnspan=4, stick='EW')
         
         self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 0)
         self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 1)
         self.tone_offset = GUIConfigVariable_ToneOffset(frame, 2)
+        self.hysteresis = GUIConfigVariable_Hysteresis(frame, 3)
+
+        tkinter.Checkbutton(frame, text='Edit',
+                            variable=self.edit_var, command=self.edit_handler
+                            ).grid(row=0, column=3, #columnspan=2,
+                                   sticky=tkinter.W)    
+        self.edit_handler()
 
     def __init__window(self):
         for i, text in enumerate(['Gear', 'Target', 'Ratio']):
@@ -635,20 +659,14 @@ class ForzaBeep(ForzaUIBase):
                             ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
                                
-        tkinter.Checkbutton(self.root, text='Edit',
-                            variable=self.edit_var, command=self.edit_handler
-                            ).grid(row=row, column=5, columnspan=2,
-                                   sticky=tkinter.W)    
-        self.edit_handler()
-
     def edit_handler(self):
+        varlist = [self.revlimit_offset, self.revlimit_percent, 
+                   self.tone_offset, self.hysteresis]
         if self.edit_var.get():
-            for var in [self.revlimit_offset, self.revlimit_percent, 
-                        self.tone_offset]:
+            for var in varlist:
                 var.config(state='readonly')
         else:
-            for var in [self.revlimit_offset, self.revlimit_percent, 
-                        self.tone_offset]:
+            for var in varlist:
                 var.config(state=tkinter.DISABLED)
 
     def reset(self, *args):
@@ -666,6 +684,7 @@ class ForzaBeep(ForzaUIBase):
         
         self.shiftdelay_deque.clear()
         self.dynamicoffset.reset_counter()
+        self.hysteresis_rpm = 0
         
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
         
@@ -681,6 +700,13 @@ class ForzaBeep(ForzaUIBase):
     def set_revlimit(self, val):
         self.revlimit = int(val)
         self.revlimit_var.set(self.revlimit)
+
+    #TODO: investigate bug where current_engine_rpm or the hysteresis get value
+    #is a string and the math breaks down
+    def loop_hysteresis(self, fdp):
+        rpm = fdp.current_engine_rpm
+        if abs(rpm - self.hysteresis_rpm) >= self.hysteresis.get():
+            self.hysteresis_rpm = rpm
 
     def loop_car_ordinal(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
@@ -787,6 +813,8 @@ class ForzaBeep(ForzaUIBase):
     def loop_func(self, fdp):
         self.loop_car_ordinal(fdp) #reset if car ordinal changes
         
+        self.loop_hysteresis(fdp) #update self.hysteresis_rpm
+        
         rpm = fdp.current_engine_rpm
         self.rpm.set(int(rpm))
 
@@ -796,7 +824,7 @@ class ForzaBeep(ForzaUIBase):
         if not fdp.is_race_on:
             return
 
-        self.lookahead.add(fdp)
+        self.lookahead.add(self.hysteresis_rpm)
 
         self.loop_runcollector(fdp)
 
@@ -868,8 +896,8 @@ class Lookahead():
         self.deque = deque(maxlen=maxlen)
         self.clear_linreg_vars()
 
-    def add(self, fdp):
-        self.deque.append(fdp.current_engine_rpm)
+    def add(self, rpm):
+        self.deque.append(rpm)
         self.set_linreg_vars()
 
     #x is the frame distance to the most recently added point
@@ -889,7 +917,7 @@ class Lookahead():
             return False
         distance = (target_rpm - self.intercept) / (self.slope * slope_factor)
         return 0 <= distance <= lookahead
-
+    
     def reset(self):
         self.deque.clear()
         self.clear_linreg_vars()
