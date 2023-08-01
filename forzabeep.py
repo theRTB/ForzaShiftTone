@@ -63,6 +63,7 @@ class constants():
     we_beep_max = 30 #print previous packets for up to x packets after shift
 
 class RunCollector():
+    MINLEN = 30
     def __init__(self):
         self.run = []
         self.state = 'WAIT'
@@ -93,26 +94,32 @@ class RunCollector():
              #   print("MAYBE_REVLIMIT RESET ACCEL NOT FULL")
                 self.reset() #back to WAIT
                 return
-            elif fdp.gear != self.gear_collected:
+            if fdp.gear != self.gear_collected:
              #   print("MAYBE_REVLIMIT RESET GEAR CHANGED")
                 self.reset() #user messed up
                 return
-            elif len(self.run) == 1:
-             #   print("MAYBE_REVLIMIT RESET LENGTH 1")
+            if len(self.run) == 1:
+                # print("MAYBE_REVLIMIT RESET LENGTH 1")
                 self.reset() #erronous run
                 return
-            elif fdp.power > 0:
+            if fdp.power > 0:
                 self.state = 'TEST'
 
         if self.state == 'TEST':
-          #  print("TEST")
+            # print("TEST")
+            max_boost = self.run[-1].boost
+            # len_before = len(self.run)
+            self.run = [p for p in self.run if p.boost >= max_boost-1e-03]
+            # print(f'TEST len base {len_before} len max boost {len(self.run)}')
+            if len(self.run) < self.MINLEN:
+                # print("TEST FAILS MINLEN TEST")
+                self.reset()
+                return
             if self.run[0].power > self.run[-1].power:
-            #    print("TEST RESET RUN NOT COMPLETE")
+                # print("TEST RESET RUN NOT COMPLETE")
                 self.reset() #run not clean, started too high rpm
                 return
             self.state = 'DONE'
-            #TODO: add test for boost:
-                #boost at equal power must be equal boost to revlimit boost
 
         self.prev_rpm = fdp.current_engine_rpm
 
