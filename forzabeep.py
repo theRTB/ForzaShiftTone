@@ -942,11 +942,10 @@ class ForzaBeep(ForzaUIBase):
     
     def close(self):
         #write all GUI configurable settings to the config file
-        constants.revlimit_percent = self.revlimit_percent.get()
-        constants.revlimit_offset = self.revlimit_offset.get()
-        constants.tone_offset = self.tone_offset.get()
-        constants.hysteresis = self.hysteresis.get()
-        constants.volume = self.volume.get()
+        gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
+                    "hysteresis", 'volume']
+        for variable in gui_vars:
+            setattr(constants, variable, getattr(self, variable).get())
         constants.write_to(FILENAME_SETTINGS)
         super().close()
 
