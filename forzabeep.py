@@ -41,6 +41,7 @@ class constants():
                    -10:'audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
                    -20:'audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
                    -30:'audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
+    volume = 0
     
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
@@ -637,7 +638,7 @@ class ForzaBeep(ForzaUIBase):
         
         self.edit_var = tkinter.IntVar(value=0)
         
-        self.volume = tkinter.IntVar(value=0)
+        self.volume = tkinter.IntVar(value=constants.volume)
 
         self.runcollector = RunCollector()
         self.lookahead = Lookahead(constants.linreg_len_min,
@@ -945,7 +946,7 @@ class ForzaBeep(ForzaUIBase):
         constants.revlimit_offset = self.revlimit_offset.get()
         constants.tone_offset = self.tone_offset.get()
         constants.hysteresis = self.hysteresis.get()
-        # self.volume -> constants.volume
+        constants.volume = self.volume.get()
         constants.write_to(FILENAME_SETTINGS)
         super().close()
 
