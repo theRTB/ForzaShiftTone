@@ -511,10 +511,11 @@ class GUIConfigVariable(ConfigVariable):
         values_gui = list(map(convert_to_gui, values))
         self.convert_from_gui = convert_from_gui
         self.convert_to_gui = convert_to_gui
-                 
+
         label = tkinter.Label(root, text=name)
-        unit = tkinter.Label(root, text=unit)        
-        self.var = tkinter.IntVar()  
+        unit = tkinter.Label(root, text=unit)
+
+        self.var = tkinter.IntVar()
         self.spinbox = tkinter.Spinbox(root, state='readonly', width=5, 
                                        justify=tkinter.RIGHT, 
                                        textvariable=self.var,
@@ -531,7 +532,7 @@ class GUIConfigVariable(ConfigVariable):
         self.spinbox.config(*args, **kwargs)
     
     def gui_get(self):
-        return self.var.get()
+        return self.spinbox.get()
     
     def gui_set(self, val):
         self.var.set(val)
@@ -544,7 +545,7 @@ class GUIConfigVariable(ConfigVariable):
     def update(self):
         val_gui = self.gui_get()
         val_internal = self.convert_from_gui(val_gui)
-        self.set(val_internal)
+        super().set(val_internal)
 
 class GUIConfigVariable_ToneOffset(GUIConfigVariable, DynamicToneOffset):
     NAME = 'Tone offset'
