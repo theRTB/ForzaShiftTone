@@ -940,7 +940,12 @@ class ForzaBeep(ForzaUIBase):
         return from_gear or revlimit_pct or revlimit_time
     
     def close(self):
+        #write all GUI configurable settings to the config file
+        constants.revlimit_percent = self.revlimit_percent.get()
+        constants.revlimit_offset = self.revlimit_offset.get()
         constants.tone_offset = self.tone_offset.get()
+        constants.hysteresis = self.hysteresis.get()
+        # self.volume -> constants.volume
         constants.write_to(FILENAME_SETTINGS)
         super().close()
 
