@@ -7,7 +7,8 @@ _It beeps, you shift._
 To enable remote telemetry in Forza Horizon 5 on PC for this application: 
 - Head to Settings -> HUD and Gameplay -> scroll down to the bottom
 - Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game.
-  - XBox remote telemetry is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead and the address modified in config.json. This is untested.
+  - XBox Data Out is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead and the address modified in config.json. This is untested.
+  - For the Microsoft Store version, install the Loopback Utility found on the internet.
 
 ## Considerations
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
