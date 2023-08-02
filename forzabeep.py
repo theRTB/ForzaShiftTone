@@ -394,7 +394,72 @@ class ForzaUIBase():
         self.server_socket.close()
         self.root.destroy()
 
-class ConfigVariable():
+#maintain a rolling array of the time between beep and actual shift
+#caps to the lower and upper limits of the tone_offset variable to avoid
+#outliers such as 0 ms reaction time or a delay of seconds or more
+#depends on ForzaBeep loop_test_for_shiftrpm and loop_beep
+class DynamicToneOffset():
+    DEQUE_MIN, DEQUE_MAX = 35, 75
+    
+    DEFAULT_TONEOFFSET = constants.tone_offset
+    OFFSET_LOWER = constants.tone_offset_lower
+    OFFSET_UPPER = constants.tone_offset_upper
+    
+    def __init__(self, tone_offset_var, *args, **kwargs):
+      #  super().__init(*args, **kwargs)
+        self.counter = None
+        self.offset = self.DEFAULT_TONEOFFSET
+        self.deque = deque([self.DEFAULT_TONEOFFSET]*self.DEQUE_MIN, 
+                           maxlen=self.DEQUE_MAX)
+        self.deque_min_counter = 0
+        self.tone_offset_var = tone_offset_var
+    
+    def start_counter(self):
+        #assert self.counter is None
+        self.counter = 0
+    
+    def increment_counter(self):
+        if self.counter is not None:
+            self.counter += 1
+            
+    def decrement_counter(self):
+        if self.counter is not None:
+            self.counter -= 1
+    
+    def finish_counter(self):
+        if self.counter is None:
+            return
+        if self.deque_min_counter <= self.DEQUE_MIN:
+            self.deque.popleft()
+        else:
+            self.deque_min_counter += 1
+        value = min(self.OFFSET_UPPER, self.counter)
+        value = max(self.OFFSET_LOWER, value)
+        self.deque.append(value)
+        average = statistics.mean(self.deque)
+        print(f'DynamicToneOffset: offset {self.offset} new average {average:.2f}')
+        average = int(round(average, 0))
+        if average != self.offset:
+            self.offset = average
+            self.apply_offset()
+        self.reset_counter()
+    
+    def apply_offset(self):
+        self.tone_offset_var.set(self.offset)
+    
+    def get_counter(self):
+        return self.counter
+        
+    def reset_counter(self):
+        self.counter = None
+    
+    def reset_to_current_value(self):
+        self.offset = self.tone_offset_var.get()
+        self.deque.clear()
+        self.deque_min_counter = 0
+        self.deque.extend([self.offset]*self.DEQUE_MIN)
+
+class ConfigVariable(object):
     def __init__(self, value, *args, **kwargs):
         self.value = value
     
@@ -447,19 +512,24 @@ class GUIConfigVariable(ConfigVariable):
         val_internal = self.convert_from_gui(val_gui)
         self.set(val_internal)
 
-class GUIConfigVariable_ToneOffset(GUIConfigVariable):
+class GUIConfigVariable_ToneOffset(GUIConfigVariable, DynamicToneOffset):
     NAME = 'Tone offset'
     LOWER, UPPER = constants.tone_offset_lower, constants.tone_offset_upper
     DEFAULTVALUE = constants.tone_offset
     UNIT = 'ms'
     
     def __init__(self, root, row, column=0):
-        super().__init__(root=root, name=self.NAME, unit=self.UNIT, row=row,
-                         convert_from_gui=ms_to_packets, 
+        GUIConfigVariable.__init__(self, root=root, name=self.NAME, unit=self.UNIT, 
+                         convert_from_gui=ms_to_packets, row=row,
                          convert_to_gui=packets_to_ms, value=self.DEFAULTVALUE,
                          values=range(self.LOWER, self.UPPER+1))
+        DynamicToneOffset.__init__(self, tone_offset_var=self)
     
-
+    def update(self):
+        super().update()
+        self.reset_to_current_value()
+        print(f"DynamicToneOffset reset to {self.value}")
+    
 class GUIConfigVariable_RevlimitOffset(GUIConfigVariable):
     NAME = 'Revlimit'
     DEFAULTVALUE = constants.revlimit_offset
@@ -499,64 +569,6 @@ class GUIConfigVariable_Hysteresis(GUIConfigVariable):
                          values=constants.hysteresis_steps,
                          value=self.DEFAULTVALUE)
 
-#maintain a rolling array of the time between beep and actual shift
-#caps to the lower and upper limits of the tone_offset variable to avoid
-#outliers such as 0 ms reaction time or a delay of seconds or more
-#depends on ForzaBeep loop_test_for_shiftrpm and loop_beep
-class DynamicToneOffset():
-    DEQUE_MIN, DEQUE_MAX = 35, 75
-    
-    DEFAULT = constants.tone_offset
-    OFFSET_LOWER = constants.tone_offset_lower
-    OFFSET_UPPER = constants.tone_offset_upper
-    
-    def __init__(self, tone_offset_var, *args, **kwargs):
-        self.counter = None
-        self.offset = self.DEFAULT
-        self.deque = deque([self.DEFAULT]*self.DEQUE_MIN, 
-                                  maxlen=self.DEQUE_MAX)
-        self.deque_min_counter = 0
-        self.tone_offset_var = tone_offset_var
-    
-    def start_counter(self):
-        #assert self.counter is None
-        self.counter = 0
-    
-    def increment_counter(self):
-        if self.counter is not None:
-            self.counter += 1
-            
-    def decrement_counter(self):
-        if self.counter is not None:
-            self.counter -= 1
-    
-    def finish_counter(self):
-        if self.counter is None:
-            return
-        if self.deque_min_counter <= self.DEQUE_MIN:
-            self.deque.popleft()
-        else:
-            self.deque_min_counter += 1
-        value = min(self.OFFSET_UPPER, self.counter)
-        value = max(self.OFFSET_LOWER, value)
-        self.deque.append(value)
-        average = statistics.mean(self.deque)
-        print(f'DynamicToneOffset: offset {self.offset} new average {average:.2f}')
-        average = int(round(average, 0))
-        if average != self.offset:
-            self.offset = average
-            self.apply_offset()
-        self.reset_counter()
-    
-    def apply_offset(self):
-        self.tone_offset_var.set(self.offset)
-    
-    def get_counter(self):
-        return self.counter
-        
-    def reset_counter(self):
-        self.counter = None
-
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
     WIDTH, HEIGHT = 745, 255
@@ -578,7 +590,6 @@ class ForzaBeep(ForzaUIBase):
         super().__init__()
         self.__init__vars()
         self.__init__window()
-        self.__init__vars_postwindow()
         self.mainloop()
 
     def __init__vars(self):
@@ -604,9 +615,6 @@ class ForzaBeep(ForzaUIBase):
         self.hysteresis_rpm = 0
 
         self.car_ordinal = None
-
-    def __init__vars_postwindow(self):
-        self.dynamicoffset = DynamicToneOffset(self.tone_offset)
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Buffers / Configurables')
@@ -699,7 +707,7 @@ class ForzaBeep(ForzaUIBase):
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
         
         self.shiftdelay_deque.clear()
-        self.dynamicoffset.reset_counter()
+        self.tone_offset.reset_counter()
         self.hysteresis_rpm = 0
         
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
@@ -785,7 +793,7 @@ class ForzaBeep(ForzaUIBase):
                 self.shiftdelay_deque[0].gear >= fdp.gear or
                 self.shiftdelay_deque[0].gear == 0): #case gear reverse
             self.shiftdelay_deque.appendleft(fdp)
-            self.dynamicoffset.increment_counter()
+            self.tone_offset.increment_counter()
             return
 
         #case gear has gone up
@@ -798,11 +806,11 @@ class ForzaBeep(ForzaUIBase):
                 shiftrpm = packet.current_engine_rpm
                 break
             prev_packet = packet
-            self.dynamicoffset.decrement_counter()
+            self.tone_offset.decrement_counter()
         if shiftrpm is not None:
             optimal = self.gears[fdp.gear-1].get_shiftrpm()
-            beep_distance = self.dynamicoffset.get_counter()
-            self.dynamicoffset.finish_counter()
+            beep_distance = self.tone_offset.get_counter()
+            self.tone_offset.finish_counter()
             beep_distance_ms = 'N/A'
             if beep_distance is not None:
                 beep_distance_ms = packets_to_ms(beep_distance)
@@ -811,7 +819,7 @@ class ForzaBeep(ForzaUIBase):
                 print("-"*50)
         self.we_beeped = 0
         self.shiftdelay_deque.clear() #TODO: test if moving this out of the if works better
-        self.dynamicoffset.reset_counter()
+        self.tone_offset.reset_counter()
 
     def loop_beep(self, fdp, rpm):
         beep_rpm = self.gears[int(fdp.gear)].get_shiftrpm()
@@ -819,7 +827,7 @@ class ForzaBeep(ForzaUIBase):
             if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
                 self.beep_counter = constants.beep_counter_max
                 self.we_beeped = constants.we_beep_max
-                self.dynamicoffset.start_counter()
+                self.tone_offset.start_counter()
                 beep(filename=self.get_soundfile())
             elif rpm < math.ceil(beep_rpm*constants.beep_rpm_pct):
                 self.beep_counter = 0
