@@ -68,11 +68,7 @@ class constants():
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
     linreg_len_max = 20 
-    
-    @classmethod
-    def update(cls, name, value):
-        setattr(cls, name, value)
-    
+        
     @classmethod
     def get_dict(cls):
         blocklist = ['update', 'get_dict', 'load_from', 'write_to']
@@ -88,7 +84,7 @@ class constants():
             for k,v in file_config.items():
                 if k == 'sound_files':
                     v = {int(key):value for key, value in v.items()}
-                cls.update(k, v)
+                setattr(cls, k, v)
     
     @classmethod
     def write_to(cls, filename):
