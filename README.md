@@ -20,6 +20,7 @@ While it is intended to run in the background without consideration while drivin
 ![example v0.1 BMW M5 2018](images/sample-BMW-M5-2018-8.png)
 
 ## Implementation
+The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
 There are three triggers:
 - Shift RPM: The RPM value in which power in the next gear becomes equal or higher to the power in the current gear. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep.
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit.
