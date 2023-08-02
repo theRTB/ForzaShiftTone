@@ -41,11 +41,11 @@ class constants():
     tone_offset_lower =  9
     tone_offset_upper = 25
     
-    revlimit_percent = 0.996 #respected rev limit for trigger revlimit
+    revlimit_percent = 0.996 #respected rev limit for trigger revlimit as pct%
     revlimit_percent_lower = 0.950
     revlimit_percent_upper = 0.998
     
-    revlimit_offset = 5 #additional margin in packets for revlimit
+    revlimit_offset = 5 #additional buffer in x packets for revlimit
     revlimit_offset_lower = 3
     revlimit_offset_upper = 8
     
@@ -54,14 +54,22 @@ class constants():
     
     log_full_shiftdata = False
     log_basic_shiftdata = True
+    we_beep_max = 30 #print previous packets for up to x packets after shift
     
     #as rpm ~ speed, and speed ~ tanh, linear regression + extrapolation 
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
     linreg_len_max = 20 
 
-    we_beep_max = 30 #print previous packets for up to x packets after shift
-
+#collects an array of packets at full throttle
+#if the user lets go of throttle, changes gear: reset
+#revlimit is confirmed by: the initial run, then x packets with negative power,
+#   then a packet with positive power. All at 100% throttle
+#Then cut down the array to force boost to be at or above the boost in the
+#   final packet
+#if power at the first packet is lower (or equal) to the power in the final
+#   packet, we have a power curve that is complete enough to do shift rpm
+#   rpm calculations with it.
 class RunCollector():
     MINLEN = 30
     def __init__(self):
@@ -260,7 +268,7 @@ class Gear():
     def set_ratio(self, val):
         self.ratio.set(f'{val:.3f}')
 
-    #if we have a new (and better trace) we reduce the state of the gear
+    #if we have a new (and better curve) we reduce the state of the gear
     #to have it recalculate the shiftrpm later
     def newrun_decrease_state(self):
         if self.state.is_final():
@@ -492,9 +500,9 @@ class GUIConfigVariable_Hysteresis(GUIConfigVariable):
                          value=self.DEFAULTVALUE)
 
 #maintain a rolling array of the time between beep and actual shift
-#caps to 2x the default tone offset to avoid outliers
+#caps to the lower and upper limits of the tone_offset variable to avoid
+#outliers such as 0 ms reaction time or a delay of seconds or more
 #depends on ForzaBeep loop_test_for_shiftrpm and loop_beep
-#
 class DynamicToneOffset():
     DEQUE_MIN, DEQUE_MAX = 35, 75
     
@@ -557,7 +565,8 @@ class ForzaBeep(ForzaUIBase):
 
     MIN_THROTTLE_FOR_BEEP = 255
     REVLIMIT_GUESS = 750  #revlimit = engine_limit - guess
-    #distance between revlimit and engine limit varies between 500 and 1250ish
+    #distance between revlimit and engine limit varies between 100 and 2000
+    #with the most common value at 500. 750 is the rough average.
 
     DEFAULT_GUI_VALUE = 'N/A'
     
@@ -817,41 +826,37 @@ class ForzaBeep(ForzaUIBase):
         elif self.beep_counter > 0 and rpm < beep_rpm:
             self.beep_counter -= 1
 
-    def loop_func(self, fdp):
-        self.loop_car_ordinal(fdp) #reset if car ordinal changes
-        
-        self.loop_hysteresis(fdp) #update self.hysteresis_rpm
-        
-        rpm = fdp.current_engine_rpm
-        self.rpm.set(int(rpm))
-
-        gear = int(fdp.gear)
-        if gear < 1 or gear > 10:
-            return
-        if not fdp.is_race_on:
-            return
-
-        self.lookahead.add(self.hysteresis_rpm)
-
-        self.loop_runcollector(fdp)
-
-        self.loop_calculate_shiftrpms()
-
+    def loop_guess_revlimit(self, fdp):
         if self.get_revlimit() == -1:
             self.set_revlimit(fdp.engine_max_rpm - self.REVLIMIT_GUESS)
             self.revlimit_entry.configure(
                                     readonlybackground=self.REVLIMIT_BG_GUESS)
             print(f'guess revlimit: {self.get_revlimit()}')
 
-        self.loop_test_for_shiftrpm(fdp)
-
+    def loop_func(self, fdp):
+        if not fdp.is_race_on:
+            return
+        
+        gear = int(fdp.gear)
+        if gear < 1 or gear > 10:
+            return
+        
+        rpm = fdp.current_engine_rpm
+        self.rpm.set(int(rpm))     
+        
+        self.loop_car_ordinal(fdp) #reset if car ordinal changes        
+        self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
+        self.loop_hysteresis(fdp) #update self.hysteresis_rpm        
+        self.lookahead.add(self.hysteresis_rpm) #update linear regresion
+        self.loop_runcollector(fdp) #add data point for curve collecting
+        self.loop_calculate_shiftrpms()
+        self.loop_test_for_shiftrpm(fdp) #test if we have shifted
+        self.gears[gear].derive_gearratio(fdp)
+        self.loop_beep(fdp, rpm) #test if we need to beep
+        
         if self.we_beeped > 0 and constants.log_full_shiftdata:
             print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {constants.we_beep_max-self.we_beeped+1}')
             self.we_beeped -= 1
-            
-        self.gears[gear].derive_gearratio(fdp)
-
-        self.loop_beep(fdp, rpm)
 
     #to account for torque not being flat, we take a linear approach
     #we take the ratio of the current torque and the torque at the shift rpm
@@ -886,10 +891,8 @@ class ForzaBeep(ForzaUIBase):
 
         if from_gear and constants.log_full_shiftdata:
             print(f'beep from_gear: {shiftrpm}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {from_gear_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
-
         if revlimit_pct and constants.log_full_shiftdata:
             print(f'beep revlimit_pct: {revlimit*self.revlimit_percent.get()}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_pct_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
-
         if revlimit_time and constants.log_full_shiftdata:
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
