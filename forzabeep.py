@@ -87,7 +87,7 @@ class constants():
             file_config = json.load(file)
             for k,v in file_config.items():
                 if k == 'sound_files':
-                    v = {int(key):value for key, value in v}
+                    v = {int(key):value for key, value in v.items()}
                 cls.update(k, v)
     
     @classmethod
