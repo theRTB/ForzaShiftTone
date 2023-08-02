@@ -15,6 +15,10 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from collections import deque
 import numpy as np
 
+#for importing config
+import json
+from os.path import exists
+
 #tell Windows we are DPI aware. We are not, but this gets around
 #tkinter scaling inconsistently.
 import ctypes
@@ -23,6 +27,10 @@ PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
 from fdp import ForzaDataPacket
+
+
+
+FILENAME_SETTINGS = 'config.json'
 
 class constants():
     ip = '127.0.0.1'
@@ -60,7 +68,36 @@ class constants():
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
     linreg_len_max = 20 
+    
+    @classmethod
+    def update(cls, name, value):
+        setattr(cls, name, value)
+    
+    @classmethod
+    def get_dict(cls):
+        blocklist = ['update', 'get_dict', 'load_from', 'write_to']
+        return {k:v for k,v in cls.__dict__.items() 
+                                        if k not in blocklist and k[0] != '_'}
 
+    @classmethod
+    def load_from(cls, filename):
+        if not exists(filename):
+            return
+        with open(filename) as file:
+            file_config = json.load(file)
+            for k,v in file_config.items():
+                if k == 'sound_files':
+                    v = {int(key):value for key, value in v}
+                cls.update(k, v)
+    
+    @classmethod
+    def write_to(cls, filename):
+        with open(filename, 'w') as file:
+            json.dump(cls.get_dict(), file, indent=4)
+
+constants.load_from(FILENAME_SETTINGS)
+#constants.write_to(FILENAME_SETTINGS)
+        
 #collects an array of packets at full throttle
 #if the user lets go of throttle, changes gear: reset
 #revlimit is confirmed by: the initial run, then x packets with negative power,
@@ -905,6 +942,11 @@ class ForzaBeep(ForzaUIBase):
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
         return from_gear or revlimit_pct or revlimit_time
+    
+    def close(self):
+        constants.tone_offset = self.tone_offset.get()
+        constants.write_to(FILENAME_SETTINGS)
+        super().close()
 
 #class that maintains a deque used for linear regression. This smooths the rpms
 #and provides a slope to predict future RPM values.
