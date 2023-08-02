@@ -599,7 +599,7 @@ class GUIConfigVariable_Hysteresis(GUIConfigVariable):
     
     def __init__(self, root, row, column=0):
         super().__init__(root=root, name=self.NAME, unit=self.UNIT, row=row,
-                         convert_from_gui=lambda x: x, column=column,
+                         convert_from_gui=lambda x: int(x), column=column,
                          convert_to_gui=lambda x: x, 
                          values=constants.hysteresis_steps,
                          value=self.DEFAULTVALUE)
@@ -760,8 +760,6 @@ class ForzaBeep(ForzaUIBase):
         self.revlimit = int(val)
         self.revlimit_var.set(self.revlimit)
 
-    #TODO: investigate bug where current_engine_rpm or the hysteresis get value
-    #is a string and the math breaks down
     def loop_hysteresis(self, fdp):
         rpm = fdp.current_engine_rpm
         if abs(rpm - self.hysteresis_rpm) >= self.hysteresis.get():
