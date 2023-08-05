@@ -32,7 +32,6 @@ The delay between beep triggers is currently set to 0.5 seconds. This time-out i
 
 ## Settings
 The settings are saved to config.json on exit. This includes revlimit %, revlimit ms, tone offset, hysteresis, and volume.
-The settings are not saved for now. Restarting the application results in a blank state including configuration.
 Remote telemetry sends data at 60 packets per second. The offset variables (Tone offset, revlimit ms) while defined in milliseconds currently use packet counts in the backend. There is one packet per 16.667 milliseconds, approximately.
 
 ### Per gear:
