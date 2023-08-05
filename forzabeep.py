@@ -43,7 +43,6 @@ class ForzaBeep(ForzaUIBase):
 
     MAXGEARS = 10
 
-    MIN_THROTTLE_FOR_BEEP = 255
     REVLIMIT_GUESS = 750  #revlimit = engine_limit - guess
     #distance between revlimit and engine limit varies between 100 and 2000
     #with the most common value at 500. 750 is the rough average.
@@ -337,13 +336,13 @@ class ForzaBeep(ForzaUIBase):
                 torque_ratio)
 
     def test_for_beep(self, shiftrpm, revlimit, fdp):
-        if fdp.accel < self.MIN_THROTTLE_FOR_BEEP:
+        if fdp.accel < constants.min_throttle_for_beep:
             return False
         tone_offset = self.tone_offset.get()
 
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
-        # from_gear = from_gear and fdp.accel >= self.MIN_THROTTLE_FOR_BEEP
+        # from_gear = from_gear and fdp.accel >= constants.min_throttle_for_beep
 
         revlimit_pct, revlimit_pct_ratio = self.torque_ratio_test(
             revlimit*self.revlimit_percent.get(), tone_offset, fdp)
