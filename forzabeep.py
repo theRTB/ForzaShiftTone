@@ -19,9 +19,11 @@ PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
+from config import constants, FILENAME_SETTINGS
+#load configuration from config.json, class GUIConfigVariable depends on this
+constants.load_from(FILENAME_SETTINGS)
 
 from ForzaUIBase import ForzaUIBase
-from config import constants, FILENAME_SETTINGS
 from gear import Gear
 from runcollector import RunCollector
 from lookahead import Lookahead
@@ -30,10 +32,7 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_ToneOffset, 
                           GUIConfigVariable_Hysteresis, packets_to_ms)
 
-#load configuration from config.json
-constants.load_from(FILENAME_SETTINGS)
 
-#constants.write_to(FILENAME_SETTINGS)
         
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
