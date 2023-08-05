@@ -21,7 +21,7 @@ class DynamicToneOffset():
     DEFAULT_TONEOFFSET = constants.tone_offset
     OFFSET_LOWER = constants.tone_offset_lower
     OFFSET_UPPER = constants.tone_offset_upper
-    OFFSET_DISCARD = constants.tone_offset_outlier
+    OFFSET_OUTLIER = constants.tone_offset_outlier
     
     def __init__(self, tone_offset_var, *args, **kwargs):
       #  super().__init(*args, **kwargs)
