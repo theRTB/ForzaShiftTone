@@ -15,7 +15,6 @@ from mttkinter import mtTkinter as tkinter
 import math
 import winsound
 from collections import deque
-import numpy as np
 
 #tell Windows we are DPI aware. We are not, but this gets around
 #tkinter scaling inconsistently.
@@ -28,16 +27,16 @@ from config import constants, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
 constants.load_from(FILENAME_SETTINGS)
 
-from ForzaUIBase import ForzaUIBase
 from gear import Gear
-from runcollector import RunCollector
-from lookahead import Lookahead
 from curve import Curve
-from guiconfigvar import (GUIConfigVariable_RevlimitPercent, 
-                          GUIConfigVariable_RevlimitOffset, 
-                          GUIConfigVariable_ToneOffset, 
+from lookahead import Lookahead
+from ForzaUIBase import ForzaUIBase
+from runcollector import RunCollector
+from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
+                          GUIConfigVariable_RevlimitOffset,
+                          GUIConfigVariable_ToneOffset,
                           GUIConfigVariable_Hysteresis, packets_to_ms)
-        
+
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
     WIDTH, HEIGHT = 745, 255
@@ -50,7 +49,7 @@ class ForzaBeep(ForzaUIBase):
     #with the most common value at 500. 750 is the rough average.
 
     DEFAULT_GUI_VALUE = 'N/A'
-    
+
     REVLIMIT_BG_NA = '#F0F0F0'
     REVLIMIT_BG_GUESS = '#ffffff'
     REVLIMIT_BG_CURVE = '#ccddcc'
@@ -67,20 +66,14 @@ class ForzaBeep(ForzaUIBase):
         self.beep_counter = 0
         self.curve = None
 
-        self.rpm = tkinter.IntVar(value=0)
         self.revlimit = -1
-        self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
-        
-        self.edit_var = tkinter.IntVar(value=0)
-        
-        self.volume = tkinter.IntVar(value=constants.volume)
 
         self.runcollector = RunCollector()
         self.lookahead = Lookahead(constants.linreg_len_min,
                                    constants.linreg_len_max)
 
         self.shiftdelay_deque = deque(maxlen=120)
-        
+
         self.hysteresis_rpm = 0
 
         self.car_ordinal = None
@@ -88,16 +81,16 @@ class ForzaBeep(ForzaUIBase):
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Buffers / Configurables')
         frame.grid(row=row, column=5, rowspan=4, columnspan=4, stick='EW')
-        
+
         self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 0)
         self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 1)
         self.tone_offset = GUIConfigVariable_ToneOffset(frame, 2)
         self.hysteresis = GUIConfigVariable_Hysteresis(frame, 3)
 
-        tkinter.Checkbutton(frame, text='Edit',
-                            variable=self.edit_var, command=self.edit_handler
-                            ).grid(row=0, column=3, #columnspan=2,
-                                   sticky=tkinter.W)    
+        self.edit_var = tkinter.IntVar(value=0)
+        tkinter.Checkbutton(frame, text='Edit', variable=self.edit_var,
+                            command=self.edit_handler).grid(row=0, column=3,
+                                                            sticky=tkinter.W)
         self.edit_handler()
 
     def __init__window(self):
@@ -107,15 +100,18 @@ class ForzaBeep(ForzaUIBase):
 
         self.gears = [None] + [Gear(self.root, g, g) for g in range(1, 11)]
 
-        row = Gear.ROW_COUNT
+        row = Gear.ROW_COUNT #start from row below gear display
 
+        self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=0,
                                                        sticky=tkinter.E)
-        self.revlimit_entry = tkinter.Entry(self.root, width=6, 
+        self.revlimit_entry = tkinter.Entry(self.root, width=6,
                                             state='readonly',
                                             justify=tkinter.RIGHT,
                                             textvariable=self.revlimit_var)
         self.revlimit_entry.grid(row=row, column=1)
+
+        self.rpm = tkinter.IntVar(value=0)
         tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
                                                   sticky=tkinter.W)
 
@@ -125,35 +121,37 @@ class ForzaBeep(ForzaUIBase):
 
         self.__init__window_buffers_frame(row)
 
+        self.volume = tkinter.IntVar(value=constants.volume)
         tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
                       from_=0, to=-30, variable=self.volume, resolution=10
                       ).grid(row=row, column=10, columnspan=1, rowspan=3,
                              sticky=tkinter.E)
-        
+
         row += 1 #continue on next row
- 
-        tkinter.Label(self.root, text='Volume').grid(row=row, column=9, 
+
+        tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
                                                      columnspan=2)
-        
+
         row += 1 #continue on next row
-        
-        tkinter.Label(self.root, text='Tach').grid(row=row, column=0, 
-                                                  sticky=tkinter.E)     
+
+        tkinter.Label(self.root, text='Tach').grid(row=row, column=0,
+                                                  sticky=tkinter.E)
         tkinter.Entry(self.root, textvariable=self.rpm, width=6,
                       justify=tkinter.RIGHT, state='readonly'
                       ).grid(row=row, column=1, sticky=tkinter.W)
-        tkinter.Label(self.root, text='RPM').grid(row=row, column=2, 
-                                                  sticky=tkinter.W) 
-        
-        if self.active.get():
-            self.active_handler()
+        tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
+                                                  sticky=tkinter.W)
+
+        #defined in ForzaUIBase, controls whether the loop runs
+        if self.active.get():     #trigger loop if active by default
+            self.active_handler() #comparable to tkinter mainloop func
         tkinter.Checkbutton(self.root, text='Active',
                             variable=self.active, command=self.active_handler
                             ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
-                               
+
     def edit_handler(self):
-        varlist = [self.revlimit_offset, self.revlimit_percent, 
+        varlist = [self.revlimit_offset, self.revlimit_percent,
                    self.tone_offset, self.hysteresis]
         if self.edit_var.get():
             for var in varlist:
@@ -165,22 +163,22 @@ class ForzaBeep(ForzaUIBase):
     def reset(self, *args):
         self.runcollector.reset()
         self.lookahead.reset()
-        
+
         self.we_beeped = 0
         self.beep_counter = 0
         self.curve = None
         self.car_ordinal = None
-        
+
         self.rpm.set(0)
         self.revlimit = -1
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
-        
+
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
         self.hysteresis_rpm = 0
-        
+
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
-        
+
         for g in self.gears[1:]:
             g.reset()
 
@@ -211,22 +209,22 @@ class ForzaBeep(ForzaUIBase):
 
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
-    #we test if this leads to a more accurate run with a better rev limit 
+    #we test if this leads to a more accurate run with a better rev limit
     #defined
     def loop_runcollector(self, fdp):
         self.runcollector.update(fdp)
 
         if not self.runcollector.run_completed():
             return
-        
+
         newrun_better = ( self.curve is not None and
                 self.runcollector.get_revlimit_if_done() > self.get_revlimit()
                 and self.runcollector.get_gear() >= self.curve.get_gear() )
-        
+
         if self.curve is None or newrun_better:
             self.curve = Curve(self.runcollector.get_run())
             self.set_revlimit(self.curve.get_revlimit())
-        
+
         if self.curve is None: #let user know we have a curve
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
@@ -301,24 +299,24 @@ class ForzaBeep(ForzaUIBase):
     def loop_func(self, fdp):
         if not fdp.is_race_on:
             return
-        
+
         gear = int(fdp.gear)
         if gear < 1 or gear > 10:
             return
-        
+
         rpm = fdp.current_engine_rpm
-        self.rpm.set(int(rpm))     
-        
-        self.loop_car_ordinal(fdp) #reset if car ordinal changes        
+        self.rpm.set(int(rpm))
+
+        self.loop_car_ordinal(fdp) #reset if car ordinal changes
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
-        self.loop_hysteresis(fdp) #update self.hysteresis_rpm        
+        self.loop_hysteresis(fdp) #update self.hysteresis_rpm
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
         self.gears[gear].derive_gearratio(fdp)
         self.loop_calculate_shiftrpms()
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp, rpm) #test if we need to beep
-        
+
         if self.we_beeped > 0 and constants.log_full_shiftdata:
             print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {constants.we_beep_max-self.we_beeped+1}')
             self.we_beeped -= 1
@@ -346,7 +344,7 @@ class ForzaBeep(ForzaUIBase):
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
         # from_gear = from_gear and fdp.accel >= self.MIN_THROTTLE_FOR_BEEP
-        
+
         revlimit_pct, revlimit_pct_ratio = self.torque_ratio_test(
             revlimit*self.revlimit_percent.get(), tone_offset, fdp)
         revlimit_time, revlimit_time_ratio = self.torque_ratio_test(
@@ -360,7 +358,7 @@ class ForzaBeep(ForzaUIBase):
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
         return from_gear or revlimit_pct or revlimit_time
-    
+
     def close(self):
         #write all GUI configurable settings to the config file
         gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
