@@ -218,38 +218,28 @@ class ForzaBeep(ForzaUIBase):
 
         if not self.runcollector.run_completed():
             return
-            
-        if self.curve is None:
-            # print("FIRST RUN DONE!")
-            self.curve = self.runcollector.get_run()
-            self.set_revlimit(self.curve[-1].current_engine_rpm)
+        
+        newrun_better = ( self.curve is not None and
+                self.runcollector.get_revlimit_if_done() > self.get_revlimit()
+                and self.runcollector.get_gear() >= self.curve.get_gear() )
+        
+        if self.curve is None or newrun_better:
+            self.curve = Curve(self.runcollector.get_run())
+            self.set_revlimit(self.curve.get_revlimit())
+        
+        if self.curve is None: #let user know we have a curve
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
-            # print(f'revlimit set: {self.revlimit.get()}')
-        elif (self.runcollector.get_revlimit_if_done() > self.get_revlimit()
-              and self.runcollector.get_gear() >= self.curve[0].gear):
-                # print(f"NEW RUN DONE! len {len(newrun)} gear is higher")
-                self.curve = self.runcollector.get_run()
-                self.set_revlimit(self.curve[-1].current_engine_rpm)
-                for g in self.gears[1:]:
-                    g.newrun_decrease_state() #force recalculation of rpm
-                    # print(f"Gear {g.gear} reset to LOCKED")
-                # print(f'revlimit set: {self.revlimit.get()}')
-        else:
-            pass
-            # print(f"NEW RUN DONE! len {len(newrun)} gear lower or revlimit lower: discarded")
+        elif newrun_better:
+            for g in self.gears[1:]:
+                g.newrun_decrease_state() #force recalculation of rpm
         self.runcollector.reset()
 
     def loop_calculate_shiftrpms(self):
-        if self.curve is not None:
-            rpm = [p.current_engine_rpm for p in self.curve]
-            power = [p.power for p in self.curve]
-
-            #filter rpm and power
-            #sort according to rpm?
-
-            for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
-                g1.calculate_shiftrpm(rpm, power, g2)
+        if self.curve is None:
+            return
+        for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
+            g1.calculate_shiftrpm(self.curve.rpm, self.curve.power, g2)
                 # print(f"gear {g1.gear} shiftrpm set: {shiftrpm}")
 
     #we assume power is negative between gear change and first frame of shift
@@ -324,9 +314,9 @@ class ForzaBeep(ForzaUIBase):
         self.loop_hysteresis(fdp) #update self.hysteresis_rpm        
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
+        self.gears[gear].derive_gearratio(fdp)
         self.loop_calculate_shiftrpms()
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
-        self.gears[gear].derive_gearratio(fdp)
         self.loop_beep(fdp, rpm) #test if we need to beep
         
         if self.we_beeped > 0 and constants.log_full_shiftdata:
@@ -341,10 +331,8 @@ class ForzaBeep(ForzaUIBase):
     # there is partial throttle.
     def torque_ratio_test(self, target_rpm, offset, fdp):
         torque_ratio = 1
-        if self.curve and fdp.torque != 0:
-            rpms = np.array([p.current_engine_rpm for p in self.curve])
-            i = np.argmin(np.abs(rpms - target_rpm))
-            target_torque = self.curve[i].torque
+        if self.curve is not None and fdp.torque != 0:
+            target_torque = self.curve.torque_at_rpm(target_rpm)
             torque_ratio = target_torque / fdp.torque
 
         return (self.lookahead.test(target_rpm, offset, torque_ratio),

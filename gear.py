@@ -187,10 +187,7 @@ class Gear():
             self.state.to_next()
             self.entry.config(readonlybackground=self.BG_LOCKED)
 
-#TODO: clean up rpm and power
 def calculate_shiftrpm(rpm, power, ratio):
-    rpm = np.array(rpm)
-    power = np.array(power)
     intersects = intersect.intersection(rpm, power, rpm*ratio, power)[0]
     shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
     print(f"shift rpm {shiftrpm}, drop to {int(shiftrpm/ratio)}, "
