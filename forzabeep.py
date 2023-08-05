@@ -4,10 +4,15 @@ Created on Sun May  7 19:35:24 2023
 
 @author: RTB
 """
-import math
+
+#replaced tkinter with supposed thread safe tkinter variant
+#instead of freezing when the main thread isn't under control of tkinter,
+#it now crashes instead. Theoretically, an improvement.
 from mttkinter import mtTkinter as tkinter
-#import tkinter #replaced with supposed thread safe tkinter variant
+#import tkinter
 #import tkinter.ttk
+
+import math
 import winsound
 from collections import deque
 import numpy as np
@@ -31,8 +36,6 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset, 
                           GUIConfigVariable_ToneOffset, 
                           GUIConfigVariable_Hysteresis, packets_to_ms)
-
-
         
 class ForzaBeep(ForzaUIBase):
     TITLE = "ForzaBeep: it beeps, you shift"
