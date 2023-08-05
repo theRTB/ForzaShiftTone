@@ -22,6 +22,7 @@ class constants():
     
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
+    min_throttle_for_beep = 255 #only test if at or above throttle amount
 
     tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
     tone_offset_lower =  9
