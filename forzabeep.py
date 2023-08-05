@@ -25,6 +25,7 @@ from config import constants, FILENAME_SETTINGS
 from gear import Gear
 from runcollector import RunCollector
 from lookahead import Lookahead
+from curve import Curve
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent, 
                           GUIConfigVariable_RevlimitOffset, 
                           GUIConfigVariable_ToneOffset, 
