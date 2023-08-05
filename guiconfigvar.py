@@ -21,6 +21,7 @@ class DynamicToneOffset():
     DEFAULT_TONEOFFSET = constants.tone_offset
     OFFSET_LOWER = constants.tone_offset_lower
     OFFSET_UPPER = constants.tone_offset_upper
+    OFFSET_DISCARD = constants.tone_offset_outlier
     
     def __init__(self, tone_offset_var, *args, **kwargs):
       #  super().__init(*args, **kwargs)
@@ -46,16 +47,23 @@ class DynamicToneOffset():
     def finish_counter(self):
         if self.counter is None:
             return
+        if self.counter > self.OFFSET_OUTLIER:
+            print(f'DynamicToneOffset: outlier {packets_to_ms(self.counter)} ms, discarded')
+            self.reset_counter()
+            return      
+        
         if self.deque_min_counter <= self.DEQUE_MIN:
             self.deque.popleft()
         else:
-            self.deque_min_counter += 1
+            self.deque_min_counter += 1     
+        
         value = min(self.OFFSET_UPPER, self.counter)
         value = max(self.OFFSET_LOWER, value)
+        
         self.deque.append(value)
         average = statistics.mean(self.deque)
-        print(f'DynamicToneOffset: offset {self.offset} new average {average:.2f}')
-        average = int(round(average, 0))
+        print(f'DynamicToneOffset: offset {self.offset:.1f} new average {average:.2f}')
+        average = round(average, 1)
         if average != self.offset:
             self.offset = average
             self.apply_offset()

@@ -27,6 +27,7 @@ class constants():
     tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
     tone_offset_lower =  9
     tone_offset_upper = 25
+    tone_offset_outlier = 37 #discard for dynamic tone if above this distance
     
     revlimit_percent = 0.996 #respected rev limit for trigger revlimit as pct%
     revlimit_percent_lower = 0.950
