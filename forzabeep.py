@@ -242,14 +242,20 @@ class ForzaBeep(ForzaUIBase):
     #we assume power is negative between gear change and first frame of shift
     #accel has to be positive at all times, otherwise we don't know for sure
     #where the shift starts
+    #tone_offset.counter runs until a shift upwards happens
+    #if so, we run backwards until the packet where power is negative and
+    #the previous packet is positive: the actual point of shifting
     def loop_test_for_shiftrpm(self, fdp):
-        if (len(self.shiftdelay_deque) == 0 or
-                self.shiftdelay_deque[0].gear >= fdp.gear or
-                self.shiftdelay_deque[0].gear == 0): #case gear reverse
+        if (len(self.shiftdelay_deque) == 0 or 
+            self.shiftdelay_deque[0].gear == fdp.gear):
             self.shiftdelay_deque.appendleft(fdp)
             self.tone_offset.increment_counter()
             return
-
+        if self.shiftdelay_deque[0].gear > fdp.gear: #reset on downshift
+            self.shiftdelay_deque.clear()
+            self.tone_offset.reset_counter()
+            return
+            
         #case gear has gone up
         prev_packet = fdp
         shiftrpm = None
@@ -272,7 +278,7 @@ class ForzaBeep(ForzaUIBase):
                 print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
         self.we_beeped = 0
-        self.shiftdelay_deque.clear() #TODO: test if moving this out of the if works better
+        self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
 
     def loop_beep(self, fdp, rpm):
