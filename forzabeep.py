@@ -109,8 +109,6 @@ class ForzaBeep(ForzaUIBase):
                                             justify=tkinter.RIGHT,
                                             textvariable=self.revlimit_var)
         self.revlimit_entry.grid(row=row, column=1)
-
-        self.rpm = tkinter.IntVar(value=0)
         tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
                                                   sticky=tkinter.W)
 
@@ -133,6 +131,7 @@ class ForzaBeep(ForzaUIBase):
 
         row += 1 #continue on next row
 
+        self.rpm = tkinter.IntVar(value=0)
         tkinter.Label(self.root, text='Tach').grid(row=row, column=0,
                                                   sticky=tkinter.E)
         tkinter.Entry(self.root, textvariable=self.rpm, width=6,
@@ -376,8 +375,8 @@ def beep(filename=constants.sound_file):
         print("Sound failed to play")
 
 def main():
-    global beep #for debugging
-    beep = ForzaBeep()
+    global forzabeep #for debugging
+    forzabeep = ForzaBeep()
 
 if __name__ == "__main__":
     main()
