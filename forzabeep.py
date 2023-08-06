@@ -27,7 +27,7 @@ from config import constants, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
 constants.load_from(FILENAME_SETTINGS)
 
-from gear import Gear
+from gear import GUIGear
 from curve import Curve
 from lookahead import Lookahead
 from ForzaUIBase import ForzaUIBase
@@ -97,9 +97,9 @@ class ForzaBeep(ForzaUIBase):
             tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
                           ).grid(row=i, column=0)
 
-        self.gears = [None] + [Gear(self.root, g, g) for g in range(1, 11)]
+        self.gears = [None] + [GUIGear(self.root, g, g) for g in range(1, 11)]
 
-        row = Gear.ROW_COUNT #start from row below gear display
+        row = GUIGear.ROW_COUNT #start from row below gear display
 
         self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=0,
