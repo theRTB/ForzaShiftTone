@@ -62,7 +62,7 @@ class constants():
         with open(filename) as file:
             file_config = json.load(file)
             for k,v in file_config.items():
-                if k == 'sound_files':
+                if k == 'sound_files': #json saves keys as string, force to int
                     v = {int(key):value for key, value in v.items()}
                 setattr(cls, k, v)
     
