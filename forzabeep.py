@@ -316,7 +316,7 @@ class ForzaBeep(ForzaUIBase):
         self.loop_hysteresis(fdp) #update self.hysteresis_rpm
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
-        self.gears[gear].derive_gearratio(fdp)
+        self.gears[gear].update(fdp)
         self.loop_calculate_shiftrpms()
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp, rpm) #test if we need to beep
