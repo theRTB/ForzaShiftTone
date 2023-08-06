@@ -29,7 +29,8 @@ class ForzaUIBase():
         self.root.title(self.TITLE)
         self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
-
+        self.root.resizable(False, False)
+        
         self.active = tkinter.IntVar(value=1)
 
         # self.__init__window()
