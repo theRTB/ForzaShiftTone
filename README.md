@@ -1,7 +1,9 @@
 # ForzaBeep
 _It beeps, you shift._
 
-**GUI application to provide a shift tone in Forza Horizon 5.**
+**Windows GUI application to provide a shift tone in Forza Horizon 5.**
+
+![example v0.4 BMW M5 2018](images/sample-BMW-M5-2018-8.png)
 
 ### Enable remote telemetry / Data out
 To enable remote telemetry in Forza Horizon 5 on Steam for this application: 
@@ -11,16 +13,20 @@ To enable remote telemetry in Forza Horizon 5 on Steam for this application:
   - For the Microsoft Store version, install the Loopback Utility found on the internet.
 
 ## Considerations
+
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
 - Drive for over one second in a single gear on road. After this the gear values will lock and turn green
   - Road surfaces are far more accurate than dirt/off-road
-  - For AWD cars: maintain throttle at a fixed amount
+  - For AWD cars: maintain throttle at a fixed amount at speed
 - Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline
   - Boost is taken into account. Some cars with very high boost may require a run at relatively low rpm in a relatively high gear to ensure enough data points at peak boost
 - a more accurate rev limit is derived from the required run. Defaults to maximum engine rpm minus 750
 
-![example v0.4 BMW M5 2018](images/sample-BMW-M5-2018-8.png)
+### Anti-cheat shenanigans and browser/Windows warnings
+
+The current release is a one-file Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will probably move away from one-file, but remain unsigned as it is not worthwhile.  
+Some Python installations running matplotlib/tkinter seem to trigger FH5's anticheat mechanism and instantly crash the game, but the per-user Anaconda's installation seems to be viable. This started after the DLSS update and Playground Games is unlikely to ever care about or fix this issue. It is unknown why this behavior even applies to Python, it does not make much sense.
 
 ## Implementation
 The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
@@ -28,9 +34,9 @@ There are three triggers:
 - Shift RPM: The RPM value in which power in the next gear becomes equal or higher to the power in the current gear. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
   - Example: A rev limit of 7850 and a value of 99.6% triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds
-- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 367 milliseconds
+- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 83 milliseconds, which leads to a prediction distance of 367ms.
 
-The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers. If you choose to not shift, the program will not beep again even if revlimit is hit.
+The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers. If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
 
 ## Settings
 The settings are saved to _config.json_ on exit. This includes Revlimit %, Revlimit ms, Tone offset, Hysteresis, and Volume.  
