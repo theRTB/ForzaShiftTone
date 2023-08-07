@@ -6,9 +6,9 @@ Created on Wed Aug  2 20:46:58 2023
 """
 import math
 import statistics
-from mttkinter import mtTkinter as tkinter
 from collections import deque
 
+from mttkinter import mtTkinter as tkinter
 import intersect
 
 #drivetrain enum for fdp
@@ -208,7 +208,7 @@ class GUIGear (Gear):
                 return colors
     
     def update_entry_colors(self):
-        (shiftrpm_fg, shiftrpm_bg, ratio_fg, ratio_bg) =self.get_entry_colors()
+        shiftrpm_fg, shiftrpm_bg, ratio_fg, ratio_bg = self.get_entry_colors()
 
         self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg, 
                                    fg=shiftrpm_fg)
