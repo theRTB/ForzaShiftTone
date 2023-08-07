@@ -36,7 +36,8 @@ There are three triggers:
   - Example: A rev limit of 7850 and a value of 99.6% triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds
 - Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 83 milliseconds, which leads to a prediction distance of 367ms.
 
-The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers. If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
+The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers.  
+If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
 
 ## Settings
 The settings are saved to _config.json_ on exit. This includes Revlimit %, Revlimit ms, Tone offset, Hysteresis, and Volume.  
@@ -45,7 +46,7 @@ There is one packet per 16.667 milliseconds, approximately.
 
 ### Per gear:
 - RPM: Derived shift rpm value. This requires the ratio of the current gear and the next gear to be determined (green background)
-- Ratio: Derived gear ratio including final ratio. Final ratio cannot be separately derived.
+- Ratio: Derived gear ratio including final ratio. Final ratio cannot be separately derived and for AWD the ratio is not identical to the in-game gearing values.
 
 ### General configuration:
 - Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Revlimit is derived upon finishing a full throttle sweep up to revlimit.
