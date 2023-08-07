@@ -196,13 +196,12 @@ class GUIGear (Gear):
                                            FG_DEFAULT, BG_LOCKED)}
 
     def __init__(self, root, number, column, starting_row=0):
+        super().__init__(number)
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
-        self.__init__window(root, number, column, starting_row)
         
-        super().__init__(number)
-                
-        # self.reset() #happens in the super init
+        self.__init__window(root, number, column, starting_row)        
+        self.update_entry_colors()
 
     def init_gui_entry(self, root, variable):
         return tkinter.Entry(root, textvariable=variable, state='readonly', 
