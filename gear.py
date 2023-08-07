@@ -67,6 +67,11 @@ class GearState():
             return self.state >= other
         return NotImplemented
 
+class Gears():
+    MAXGEARS = 10
+    def __init__(self):
+        self.gears = [None] + [Gear(g) for g in range(1, self.MAXGEARS+1)]
+
 #class to hold all variables per individual gear and GUI display
 class Gear():
     DEQUE_MIN, DEQUE_LEN  = 40, 60
