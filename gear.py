@@ -69,8 +69,39 @@ class GearState():
 
 class Gears():
     MAXGEARS = 10
+    GEARLIST = range(1, MAXGEARS+1)
+    
     def __init__(self):
-        self.gears = [None] + [Gear(g) for g in range(1, self.MAXGEARS+1)]
+        self.gears = [None] + [Gear(g) for g in self.GEARLIST]
+    
+    def reset(self):
+       for g in self.gears[1:]:
+           g.reset()
+    
+    def newrun_decrease_state(self):
+        for g in self.gears[1:]:
+            g.newrun_decrease_state() #force recalculation of rpm
+
+    def calculate_shiftrpms(self, rpm, power):
+        for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
+            g1.calculate_shiftrpm(rpm, power, g2)
+    
+    def get_shiftrpm_of(self, gear):
+        return self.gears[gear].get_shiftrpm()
+    
+    def update_of(self, gear, fdp):
+        self.gears[gear].update(fdp)
+
+class GUIGears(Gears):
+    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
+    def __init__(self, root):
+        self.__init__labels(root)
+        self.gears = [None] + [GUIGear(root, g, g) for g in self.GEARLIST]
+        
+    def __init__labels(self, root):
+        for i, text in enumerate(['Gear', 'Target', 'Ratio']):
+            tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
+                          ).grid(row=i, column=0)
 
 #class to hold all variables per individual gear and GUI display
 class Gear():
@@ -83,16 +114,12 @@ class Gear():
         self.gear = number
         self.state = GearState(label=f'Gear {number}')
         self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
-        
-        self.shiftrpm = None
-        self.ratio = None
-
-        self.reset()
+        self.shiftrpm = -1
+        self.ratio = 0
 
     def reset(self):
+        self.state.reset()
         self.ratio_deque.clear()
-        self.state.reset()   
-        
         self.set_shiftrpm(-1)
         self.set_ratio(0)
         
@@ -188,12 +215,9 @@ class GUIGear (Gear):
         self.ratio_entry = self.init_gui_entry(root, self.ratio_var)
 
         self.label.grid(row=starting_row, column=column)
-        if number != 10:
+        if number != Gears.MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
         self.ratio_entry.grid(row=starting_row+2, column=column)
-
-        # self.entry_row = starting_row+1
-        # self.column = column
 
     def reset(self):
         super().reset()
