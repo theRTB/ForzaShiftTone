@@ -78,16 +78,12 @@ class Gear():
         self.gear = number
         self.state = GearState(label=f'Gear {number}')
         self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
-        
-        self.shiftrpm = None
-        self.ratio = None
-
-        self.reset()
+        self.shiftrpm = -1
+        self.ratio = 0
 
     def reset(self):
-        self.ratio_deque.clear()
         self.state.reset()   
-        
+        self.ratio_deque.clear()
         self.set_shiftrpm(-1)
         self.set_ratio(0)
         
@@ -164,13 +160,12 @@ class GUIGear (Gear):
                                            FG_DEFAULT, BG_LOCKED)}
 
     def __init__(self, root, number, column, starting_row=0):
+        super().__init__(number)
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
-        self.__init__window(root, number, column, starting_row)
         
-        super().__init__(number)
-                
-        # self.reset() #happens in the super init
+        self.__init__window(root, number, column, starting_row)        
+        self.update_entry_colors()
 
     def init_gui_entry(self, root, variable):
         return tkinter.Entry(root, textvariable=variable, state='readonly', 
@@ -186,9 +181,6 @@ class GUIGear (Gear):
         if number != 10:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
         self.ratio_entry.grid(row=starting_row+2, column=column)
-
-        # self.entry_row = starting_row+1
-        # self.column = column
 
     def reset(self):
         super().reset()
