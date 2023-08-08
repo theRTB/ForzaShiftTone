@@ -93,15 +93,18 @@ class Gears():
         self.gears[gear].update(fdp)
 
 class GUIGears(Gears):
+    LABELS = ['Gear', 'Target', 'Ratio']
     ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
-    def __init__(self, root):
-        self.__init__labels(root)
-        self.gears = [None] + [GUIGear(root, g, g) for g in self.GEARLIST]
+    def __init__(self):
+        self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
         
-    def __init__labels(self, root):
-        for i, text in enumerate(['Gear', 'Target', 'Ratio']):
-            tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
+    def init_window(self, root):
+        for i, text in enumerate(self.LABELS):
+            tkinter.Label(root, text=text, width=7, anchor=tkinter.E
                           ).grid(row=i, column=0)
+            
+        for i, g in enumerate(self.gears[1:], start=1):
+            g.init_window(root, i, i)
 
 #class to hold all variables per individual gear and GUI display
 class Gear():
@@ -195,19 +198,19 @@ class GUIGear (Gear):
                     GearState.CALCULATED: (FG_DEFAULT, BG_LOCKED,  
                                            FG_DEFAULT, BG_LOCKED)}
 
-    def __init__(self, root, number, column, starting_row=0):
-        super().__init__(number)
+    def __init__(self, number):
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
+        super().__init__(number)
+        super().reset()
         
-        self.__init__window(root, number, column, starting_row)        
-        self.update_entry_colors()
+        # self.__init__window(root, number, column, starting_row)
 
     def init_gui_entry(self, root, variable):
         return tkinter.Entry(root, textvariable=variable, state='readonly', 
                              width=self.ENTRY_WIDTH, justify=tkinter.RIGHT)
 
-    def __init__window(self, root, number, column, starting_row):
+    def init_window(self, root, number, column, starting_row=0):
         self.label = tkinter.Label(root, text=f'{number}',
                                    width=self.ENTRY_WIDTH)
         self.shiftrpm_entry = self.init_gui_entry(root, self.shiftrpm_var)
@@ -216,7 +219,8 @@ class GUIGear (Gear):
         self.label.grid(row=starting_row, column=column)
         if number != Gears.MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
-        self.ratio_entry.grid(row=starting_row+2, column=column)
+        self.ratio_entry.grid(row=starting_row+2, column=column)       
+        self.update_entry_colors()
 
     def reset(self):
         super().reset()

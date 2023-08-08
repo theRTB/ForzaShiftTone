@@ -97,7 +97,9 @@ class ForzaBeep(ForzaUIBase):
             tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
                           ).grid(row=i, column=0)
 
-        self.gears = [None] + [GUIGear(self.root, g, g) for g in range(1, 11)]
+        self.gears = [None] + [GUIGear(g) for g in range(1, 11)]
+        for i, g in enumerate(self.gears[1:], start=1):
+            g.init_window(self.root, i, i)
 
         row = GUIGear.ROW_COUNT #start from row below gear display
 
