@@ -27,7 +27,7 @@ from config import constants, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
 constants.load_from(FILENAME_SETTINGS)
 
-from gear import GUIGears
+from gear import GUIGears, MAXGEARS
 from curve import Curve
 from lookahead import Lookahead
 from ForzaUIBase import ForzaUIBase
@@ -299,7 +299,7 @@ class ForzaBeep(ForzaUIBase):
             return
 
         gear = int(fdp.gear)
-        if gear < 1 or gear > 10:
+        if gear < 1 or gear > MAXGEARS:
             return
 
         rpm = fdp.current_engine_rpm
@@ -311,7 +311,7 @@ class ForzaBeep(ForzaUIBase):
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
         self.gears.update_of(gear, fdp) #update gear ratio and state of gear
-        self.loop_calculate_shiftrpms()
+        self.loop_calculate_shiftrpms() #derive shift
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp, rpm) #test if we need to beep
 
