@@ -280,7 +280,7 @@ class ForzaBeep(ForzaUIBase):
                 beep(filename=self.get_soundfile())
             elif rpm < math.ceil(beep_rpm*config.beep_rpm_pct):
                 self.beep_counter = 0
-        elif self.beep_counter > 0 and rpm < beep_rpm:
+        elif (self.beep_counter > 0 and (rpm < beep_rpm or beep_rpm == -1)):
             self.beep_counter -= 1
 
     def loop_guess_revlimit(self, fdp):
