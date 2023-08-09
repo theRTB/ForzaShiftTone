@@ -27,7 +27,7 @@ from config import constants, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
 constants.load_from(FILENAME_SETTINGS)
 
-from gear import GUIGear
+from gear import GUIGears
 from curve import Curve
 from lookahead import Lookahead
 from ForzaUIBase import ForzaUIBase
@@ -65,6 +65,8 @@ class ForzaBeep(ForzaUIBase):
         self.beep_counter = 0
         self.curve = None
 
+        self.gears = GUIGears()
+
         self.revlimit = -1
 
         self.runcollector = RunCollector()
@@ -93,15 +95,9 @@ class ForzaBeep(ForzaUIBase):
         self.edit_handler()
 
     def __init__window(self):
-        for i, text in enumerate(['Gear', 'Target', 'Ratio']):
-            tkinter.Label(self.root, text=text, width=7, anchor=tkinter.E
-                          ).grid(row=i, column=0)
+        self.gears.init_window(self.root)
 
-        self.gears = [None] + [GUIGear(g) for g in range(1, 11)]
-        for i, g in enumerate(self.gears[1:], start=1):
-            g.init_window(self.root, i, i)
-
-        row = GUIGear.ROW_COUNT #start from row below gear display
+        row = GUIGears.ROW_COUNT #start from row below gear display
 
         self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
         tkinter.Label(self.root, text='Revlimit').grid(row=row, column=0,
@@ -179,8 +175,7 @@ class ForzaBeep(ForzaUIBase):
 
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
 
-        for g in self.gears[1:]:
-            g.reset()
+        self.gears.reset()
 
     def get_soundfile(self):
         return constants.sound_files[self.volume.get()]
@@ -228,24 +223,21 @@ class ForzaBeep(ForzaUIBase):
         if self.curve is None: #let user know we have a curve
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
-        elif newrun_better:
-            for g in self.gears[1:]:
-                g.newrun_decrease_state() #force recalculation of rpm
+        elif newrun_better: #force recalculation of rpm if possible
+            self.gears.newrun_decrease_state()
         self.runcollector.reset()
 
     def loop_calculate_shiftrpms(self):
         if self.curve is None:
             return
-        for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
-            g1.calculate_shiftrpm(self.curve.rpm, self.curve.power, g2)
-                # print(f"gear {g1.gear} shiftrpm set: {shiftrpm}")
+        self.gears.calculate_shiftrpms(self.curve.rpm, self.curve.power)
 
     #we assume power is negative between gear change and first frame of shift
     #accel has to be positive at all times, otherwise we don't know for sure
     #where the shift starts
     #tone_offset.counter runs until a shift upwards happens
     #if so, we run backwards until the packet where power is negative and
-    #the previous packet is positive: the actual point of shifting
+    #the previous packet's power  is positive: the actual point of shifting
     def loop_test_for_shiftrpm(self, fdp):
         if (len(self.shiftdelay_deque) == 0 or 
             self.shiftdelay_deque[0].gear == fdp.gear):
@@ -269,9 +261,9 @@ class ForzaBeep(ForzaUIBase):
             prev_packet = packet
             self.tone_offset.decrement_counter()
         if shiftrpm is not None:
-            optimal = self.gears[fdp.gear-1].get_shiftrpm()
+            optimal = self.gears.get_shiftrpm_of(fdp.gear-1)
             beep_distance = self.tone_offset.get_counter()
-            self.tone_offset.finish_counter()
+            self.tone_offset.finish_counter() #update dynamic offset logic
             beep_distance_ms = 'N/A'
             if beep_distance is not None:
                 beep_distance_ms = packets_to_ms(beep_distance)
@@ -283,7 +275,7 @@ class ForzaBeep(ForzaUIBase):
         self.tone_offset.reset_counter()
 
     def loop_beep(self, fdp, rpm):
-        beep_rpm = self.gears[int(fdp.gear)].get_shiftrpm()
+        beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
         if self.beep_counter <= 0:
             if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
                 self.beep_counter = constants.beep_counter_max
@@ -318,7 +310,7 @@ class ForzaBeep(ForzaUIBase):
         self.loop_hysteresis(fdp) #update self.hysteresis_rpm
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
-        self.gears[gear].update(fdp)
+        self.gears.update_of(gear, fdp) #update gear ratio and state of gear
         self.loop_calculate_shiftrpms()
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp, rpm) #test if we need to beep
