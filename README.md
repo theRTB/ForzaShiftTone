@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Horizon 5.**
 
-![example v0.4 BMW M5 2018](images/sample-BMW-M5-2018-8.png)
+![example v0.4 BMW M5 2018](images/sample-BMW-M5-2018-9.png)
 
 ### Enable remote telemetry / Data out
 To enable remote telemetry in Forza Horizon 5 on Steam for this application: 
