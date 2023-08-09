@@ -69,9 +69,9 @@ class config():
             file_config = json.load(file)
             for k,v in file_config.items(): 
                 if k == 'sound_files': #json saves keys as string, force to int
-                    v = {int(key):value for key, value in v.items()}
-                    v = {key:f'audio/{value}' for key, value in v.items()
-                         if value[:6] != 'audio/'}
+                    v = {int(key):(value if value[:6] == 'audio/' 
+                                   else f'audio/{value}')
+                                                  for key, value in v.items()}
                 #update old sound location to new audio folder
                 if k == 'sound_file' and v[:6] != 'audio/':
                     v = f'audio/{v}'
