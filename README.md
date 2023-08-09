@@ -30,7 +30,7 @@ Some Python installations running matplotlib/tkinter seem to trigger FH5's antic
 ## Implementation
 The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
 There are three triggers:
-- Shift RPM: The RPM value in which power in the next gear becomes equal or higher to the power in the current gear. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
+- Shift RPM: The RPM value at which power in the current becomes lower than the power in the next gear: the ideal time to upshift. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
   - Example: A rev limit of 7850 and a value of 99.6% triggers a beep if it predicts 7818.6 rpm will be reached in 283 milliseconds
 - Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 83 milliseconds, which leads to a prediction distance of 367ms.
