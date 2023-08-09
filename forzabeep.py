@@ -42,11 +42,7 @@ class ForzaBeep(ForzaUIBase):
     WIDTH, HEIGHT = 745, 255
 
     MAXGEARS = 10
-
-    REVLIMIT_GUESS = 750  #revlimit = engine_limit - guess
-    #distance between revlimit and engine limit varies between 100 and 2000
-    #with the most common value at 500. 750 is the rough average.
-
+    
     DEFAULT_GUI_VALUE = 'N/A'
 
     REVLIMIT_BG_NA = '#F0F0F0'
@@ -289,7 +285,7 @@ class ForzaBeep(ForzaUIBase):
 
     def loop_guess_revlimit(self, fdp):
         if self.get_revlimit() == -1:
-            self.set_revlimit(fdp.engine_max_rpm - self.REVLIMIT_GUESS)
+            self.set_revlimit(fdp.engine_max_rpm - config.revlimit_guess)
             self.revlimit_entry.configure(
                                     readonlybackground=self.REVLIMIT_BG_GUESS)
             print(f'guess revlimit: {self.get_revlimit()}')

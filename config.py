@@ -13,12 +13,18 @@ class config():
     ip = '127.0.0.1'
     port = 12350
     packet_format = 'fh4'
+    
     sound_file = 'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
     sound_files = {  0:'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
                    -10:'audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
                    -20:'audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
                    -30:'audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
     volume = 0
+    
+    #initial revlimit = engine_limit - guess
+    #distance between revlimit and engine limit varies between 100 and 2000
+    #with the most common value at 500. 750 is the rough average.
+    revlimit_guess = 750
     
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
