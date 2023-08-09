@@ -38,7 +38,7 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_Hysteresis, packets_to_ms)
 
 class ForzaBeep(ForzaUIBase):
-    TITLE = "ForzaBeep: it beeps, you shift"
+    TITLE = "ForzaShiftTone: Dynamic shift tone for Forza Horizon 5"
     WIDTH, HEIGHT = 745, 255
 
     MAXGEARS = 10

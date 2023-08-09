@@ -1,5 +1,4 @@
-# ForzaBeep
-_It beeps, you shift._
+# ForzaShiftTone
 
 **Windows GUI application to provide a shift tone in Forza Horizon 5.**
 
