@@ -23,9 +23,9 @@ PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
-from config import constants, FILENAME_SETTINGS
+from config import config, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
-constants.load_from(FILENAME_SETTINGS)
+config.load_from(FILENAME_SETTINGS)
 
 from gear import GUIGears, MAXGEARS
 from curve import Curve
@@ -70,8 +70,8 @@ class ForzaBeep(ForzaUIBase):
         self.revlimit = -1
 
         self.runcollector = RunCollector()
-        self.lookahead = Lookahead(constants.linreg_len_min,
-                                   constants.linreg_len_max)
+        self.lookahead = Lookahead(config.linreg_len_min,
+                                   config.linreg_len_max)
 
         self.shiftdelay_deque = deque(maxlen=120)
 
@@ -116,7 +116,7 @@ class ForzaBeep(ForzaUIBase):
 
         self.__init__window_buffers_frame(row)
 
-        self.volume = tkinter.IntVar(value=constants.volume)
+        self.volume = tkinter.IntVar(value=config.volume)
         tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
                       from_=0, to=-30, variable=self.volume, resolution=10
                       ).grid(row=row, column=10, columnspan=1, rowspan=3,
@@ -178,7 +178,7 @@ class ForzaBeep(ForzaUIBase):
         self.gears.reset()
 
     def get_soundfile(self):
-        return constants.sound_files[self.volume.get()]
+        return config.sound_files[self.volume.get()]
 
     def get_revlimit(self):
         return self.revlimit
@@ -267,7 +267,7 @@ class ForzaBeep(ForzaUIBase):
             beep_distance_ms = 'N/A'
             if beep_distance is not None:
                 beep_distance_ms = packets_to_ms(beep_distance)
-            if constants.log_basic_shiftdata:
+            if config.log_basic_shiftdata:
                 print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
         self.we_beeped = 0
@@ -278,11 +278,11 @@ class ForzaBeep(ForzaUIBase):
         beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
         if self.beep_counter <= 0:
             if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
-                self.beep_counter = constants.beep_counter_max
-                self.we_beeped = constants.we_beep_max
+                self.beep_counter = config.beep_counter_max
+                self.we_beeped = config.we_beep_max
                 self.tone_offset.start_counter()
                 beep(filename=self.get_soundfile())
-            elif rpm < math.ceil(beep_rpm*constants.beep_rpm_pct):
+            elif rpm < math.ceil(beep_rpm*config.beep_rpm_pct):
                 self.beep_counter = 0
         elif self.beep_counter > 0 and rpm < beep_rpm:
             self.beep_counter -= 1
@@ -315,8 +315,8 @@ class ForzaBeep(ForzaUIBase):
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp, rpm) #test if we need to beep
 
-        if self.we_beeped > 0 and constants.log_full_shiftdata:
-            print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {constants.we_beep_max-self.we_beeped+1}')
+        if self.we_beeped > 0 and config.log_full_shiftdata:
+            print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {config.we_beep_max-self.we_beeped+1}')
             self.we_beeped -= 1
 
     #to account for torque not being flat, we take a linear approach
@@ -335,7 +335,7 @@ class ForzaBeep(ForzaUIBase):
                 torque_ratio)
 
     def test_for_beep(self, shiftrpm, revlimit, fdp):
-        if fdp.accel < constants.min_throttle_for_beep:
+        if fdp.accel < config.min_throttle_for_beep:
             return False
         tone_offset = self.tone_offset.get()
 
@@ -348,11 +348,11 @@ class ForzaBeep(ForzaUIBase):
         revlimit_time, revlimit_time_ratio = self.torque_ratio_test(
             revlimit, (tone_offset + self.revlimit_offset.get()), fdp)
 
-        if from_gear and constants.log_full_shiftdata:
+        if from_gear and config.log_full_shiftdata:
             print(f'beep from_gear: {shiftrpm}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {from_gear_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
-        if revlimit_pct and constants.log_full_shiftdata:
+        if revlimit_pct and config.log_full_shiftdata:
             print(f'beep revlimit_pct: {revlimit*self.revlimit_percent.get()}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_pct_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
-        if revlimit_time and constants.log_full_shiftdata:
+        if revlimit_time and config.log_full_shiftdata:
             print(f'beep revlimit_time: {revlimit}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {revlimit_time_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
 
         return from_gear or revlimit_pct or revlimit_time
@@ -362,11 +362,11 @@ class ForzaBeep(ForzaUIBase):
         gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
                     "hysteresis", 'volume']
         for variable in gui_vars:
-            setattr(constants, variable, getattr(self, variable).get())
-        constants.write_to(FILENAME_SETTINGS)
+            setattr(config, variable, getattr(self, variable).get())
+        config.write_to(FILENAME_SETTINGS)
         super().close()
 
-def beep(filename=constants.sound_file):
+def beep(filename=config.sound_file):
     try:
         winsound.PlaySound(filename,
                            winsound.SND_FILENAME | winsound.SND_ASYNC |

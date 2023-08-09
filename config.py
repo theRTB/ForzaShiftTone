@@ -9,7 +9,7 @@ from os.path import exists
 
 FILENAME_SETTINGS = 'config.json'
 
-class constants():
+class config():
     ip = '127.0.0.1'
     port = 12350
     packet_format = 'fh4'

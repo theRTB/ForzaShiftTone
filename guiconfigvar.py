@@ -7,7 +7,7 @@ Created on Wed Aug  2 20:54:19 2023
 
 import statistics
 import numpy as np
-from config import constants
+from config import config
 from collections import deque
 from mttkinter import mtTkinter as tkinter
 
@@ -18,10 +18,10 @@ from mttkinter import mtTkinter as tkinter
 class DynamicToneOffset():
     DEQUE_MIN, DEQUE_MAX = 35, 75
 
-    DEFAULT_TONEOFFSET = constants.tone_offset
-    OFFSET_LOWER = constants.tone_offset_lower
-    OFFSET_UPPER = constants.tone_offset_upper
-    OFFSET_OUTLIER = constants.tone_offset_outlier
+    DEFAULT_TONEOFFSET = config.tone_offset
+    OFFSET_LOWER = config.tone_offset_lower
+    OFFSET_UPPER = config.tone_offset_upper
+    OFFSET_OUTLIER = config.tone_offset_outlier
 
     def __init__(self, tone_offset_var, *args, **kwargs):
       #  super().__init(*args, **kwargs)
@@ -140,8 +140,8 @@ class GUIConfigVariable(ConfigVariable):
 
 class GUIConfigVariable_ToneOffset(GUIConfigVariable, DynamicToneOffset):
     NAME = 'Tone offset'
-    LOWER, UPPER = constants.tone_offset_lower, constants.tone_offset_upper
-    DEFAULTVALUE = constants.tone_offset
+    LOWER, UPPER = config.tone_offset_lower, config.tone_offset_upper
+    DEFAULTVALUE = config.tone_offset
     UNIT = 'ms'
 
     def __init__(self, root, row, column=0):
@@ -158,9 +158,9 @@ class GUIConfigVariable_ToneOffset(GUIConfigVariable, DynamicToneOffset):
 
 class GUIConfigVariable_RevlimitOffset(GUIConfigVariable):
     NAME = 'Revlimit'
-    DEFAULTVALUE = constants.revlimit_offset
-    LOWER = constants.revlimit_offset_lower
-    UPPER = constants.revlimit_offset_upper
+    DEFAULTVALUE = config.revlimit_offset
+    LOWER = config.revlimit_offset_lower
+    UPPER = config.revlimit_offset_upper
     UNIT = 'ms'
 
     def __init__(self, root, row, column=0):
@@ -171,9 +171,9 @@ class GUIConfigVariable_RevlimitOffset(GUIConfigVariable):
 
 class GUIConfigVariable_RevlimitPercent(GUIConfigVariable):
     NAME = 'Revlimit'
-    DEFAULTVALUE = constants.revlimit_percent
-    LOWER = constants.revlimit_percent_lower
-    UPPER = constants.revlimit_percent_upper
+    DEFAULTVALUE = config.revlimit_percent
+    LOWER = config.revlimit_percent_lower
+    UPPER = config.revlimit_percent_upper
     UNIT = '%'
 
     def __init__(self, root, row, column=0):
@@ -185,14 +185,14 @@ class GUIConfigVariable_RevlimitPercent(GUIConfigVariable):
 
 class GUIConfigVariable_Hysteresis(GUIConfigVariable):
     NAME = 'Hysteresis'
-    DEFAULTVALUE = constants.hysteresis
+    DEFAULTVALUE = config.hysteresis
     UNIT = 'rpm'
 
     def __init__(self, root, row, column=0):
         super().__init__(root=root, name=self.NAME, unit=self.UNIT, row=row,
                          convert_from_gui=lambda x: int(x), column=column,
                          convert_to_gui=lambda x: x,
-                         values=constants.hysteresis_steps,
+                         values=config.hysteresis_steps,
                          value=self.DEFAULTVALUE)
 
 #convert a packet rate of 60hz to integer milliseconds

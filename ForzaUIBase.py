@@ -11,7 +11,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 
 from fdp import ForzaDataPacket
 
-from config import constants
+from config import config
 
 #base class for a tkinter GUI that listens to UDP for packets by a forza title
 class ForzaUIBase():
@@ -23,7 +23,7 @@ class ForzaUIBase():
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.settimeout(1)
-        self.server_socket.bind((constants.ip, constants.port))
+        self.server_socket.bind((config.ip, config.port))
 
         self.root = tkinter.Tk()
         self.root.title(self.TITLE)
@@ -63,7 +63,7 @@ class ForzaUIBase():
     def fdp_loop(self, loop_func=None):
         try:
             while self.isRunning:
-                fdp = nextFdp(self.server_socket, constants.packet_format)
+                fdp = nextFdp(self.server_socket, config.packet_format)
                 if fdp is None:
                     continue
 
