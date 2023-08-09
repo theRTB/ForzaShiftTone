@@ -14,11 +14,11 @@ class config():
     port = 12350
     packet_format = 'fh4'
     
-    sound_file = 'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
-    sound_files = {  0:'audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
-                   -10:'audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
-                   -20:'audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
-                   -30:'audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
+    sound_file = 'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
+    sound_files = {  0:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
+                   -10:'audio/audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
+                   -20:'audio/audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
+                   -30:'audio/audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
     volume = 0
     
     #initial revlimit = engine_limit - guess
@@ -67,9 +67,15 @@ class config():
             return
         with open(filename) as file:
             file_config = json.load(file)
-            for k,v in file_config.items():
+            for k,v in file_config.items(): 
                 if k == 'sound_files': #json saves keys as string, force to int
                     v = {int(key):value for key, value in v.items()}
+                    v = {key:f'audio/{value}' for key, value in v.items()
+                         if value[:6] != 'audio/'}
+                #update old sound location to new audio folder
+                if k == 'sound_file' and v[:6] != 'audio/':
+                    v = f'audio/{v}'
+                    
                 setattr(cls, k, v)
     
     @classmethod
