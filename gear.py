@@ -11,6 +11,9 @@ from collections import deque
 from mttkinter import mtTkinter as tkinter
 import intersect
 
+#Forza Horizon 5 is limited to 10 gears (ignoring reverse)
+MAXGEARS = 10
+
 #drivetrain enum for fdp
 DRIVETRAIN_FWD = 0
 DRIVETRAIN_RWD = 1
@@ -22,34 +25,34 @@ class GearState():
     REACHED    = 1 # gear has been seen, variance above lower bound
     LOCKED     = 2 # variance on gear ratio below lower bound
     CALCULATED = 3 # shift rpm calculated off gear ratios
-    
+
     def reset(self):
         self.state = self.UNUSED
-        
+
     def __init__(self, label):
         self.label = label #only used for asserts
         self.reset()
-    
+
     def set(self, state):
         self.state = state
-    
+
     def to_next(self):
         assert self.state < 3, f'state {self.label} to_next used on CALCULATED state'
         self.state += 1
-    
+
     def to_previous(self):
         assert self.state > 0, f'state {self.label} to_previous used on UNUSED state'
         self.state -= 1
 
     def at_initial(self):
         return self.state == self.UNUSED
-    
+
     def at_locked(self):
         return self.state == self.LOCKED
-    
+
     def at_least_locked(self):
         return self.state >= self.LOCKED
-    
+
     def at_final(self):
         return self.state == self.CALCULATED
 
@@ -67,49 +70,10 @@ class GearState():
             return self.state >= other
         return NotImplemented
 
-class Gears():
-    MAXGEARS = 10
-    GEARLIST = range(1, MAXGEARS+1)
-    
-    def __init__(self):
-        self.gears = [None] + [Gear(g) for g in self.GEARLIST]
-    
-    def reset(self):
-       for g in self.gears[1:]:
-           g.reset()
-    
-    def newrun_decrease_state(self):
-        for g in self.gears[1:]:
-            g.newrun_decrease_state() #force recalculation of rpm
-
-    def calculate_shiftrpms(self, rpm, power):
-        for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
-            g1.calculate_shiftrpm(rpm, power, g2)
-    
-    def get_shiftrpm_of(self, gear):
-        return self.gears[gear].get_shiftrpm()
-    
-    def update_of(self, gear, fdp):
-        self.gears[gear].update(fdp)
-
-class GUIGears(Gears):
-    LABELS = ['Gear', 'Target', 'Ratio']
-    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
-    def __init__(self):
-        self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
-        
-    def init_window(self, root):
-        for i, text in enumerate(self.LABELS):
-            tkinter.Label(root, text=text, width=7, anchor=tkinter.E
-                          ).grid(row=i, column=0)
-            
-        for i, g in enumerate(self.gears[1:], start=1):
-            g.init_window(root, i, i)
-
-#class to hold all variables per individual gear and GUI display
+#class to hold all variables per individual gear
 class Gear():
     DEQUE_MIN, DEQUE_LEN  = 40, 60
-    
+
     #              FWD    RWD    AWD (awd lower due to center diff variance)
     VAR_BOUNDS = [1e-08, 1e-08, 1e-04]
 
@@ -125,7 +89,7 @@ class Gear():
         self.ratio_deque.clear()
         self.set_shiftrpm(-1)
         self.set_ratio(0)
-        
+
     def get_shiftrpm(self):
         return self.shiftrpm
 
@@ -143,7 +107,7 @@ class Gear():
     def newrun_decrease_state(self):
         if self.state.at_final():
             self.state.to_previous()
-        
+
     def to_next_state(self):
         self.state.to_next()
 
@@ -157,20 +121,20 @@ class Gear():
         ratio = derive_gearratio(fdp)
         if ratio is None:
             return
-        
+
         self.ratio_deque.append(ratio)
         if len(self.ratio_deque) < 10:
             return
 
         median = statistics.median(self.ratio_deque)
         var = statistics.variance(self.ratio_deque)
-        
+
         var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
         if var < var_bound and len(self.ratio_deque) >= self.DEQUE_MIN:
             self.to_next_state() #implied from reached to locked
             print(f'LOCKED {self.gear}')
         self.set_ratio(median)
-        
+
     def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
             shiftrpm = calculate_shiftrpm(rpm, power,
@@ -178,24 +142,52 @@ class Gear():
             self.set_shiftrpm(shiftrpm)
             self.to_next_state()
 
+#class to hold all gears up to the maximum of MAXGEARS
+class Gears():
+    GEARLIST = range(1, MAXGEARS+1)
+
+    #first element is None to enable a 1:1 mapping of array to Gear number
+    #it could be used as reverse gear but not in a usable manner anyway
+    def __init__(self):
+        self.gears = [None] + [Gear(g) for g in self.GEARLIST]
+
+    def reset(self):
+       for g in self.gears[1:]:
+           g.reset()
+
+    def newrun_decrease_state(self):
+        for g in self.gears[1:]:
+            g.newrun_decrease_state() #force recalculation of rpm
+
+    def calculate_shiftrpms(self, rpm, power):
+        for g1, g2 in zip(self.gears[1:-1], self.gears[2:]):
+            g1.calculate_shiftrpm(rpm, power, g2)
+
+    def get_shiftrpm_of(self, gear):
+        if gear > 0:
+            return self.gears[int(gear)].get_shiftrpm()
+        return -1
+
+    def update_of(self, gear, fdp):
+        self.gears[gear].update(fdp)
+
 #class for GUI display of class Gear
-class GUIGear (Gear):    
-    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
+class GUIGear (Gear):
     ENTRY_WIDTH = 6
-        
+
     FG_DEFAULT = '#000000'
     BG_UNUSED  = '#F0F0F0'
     BG_REACHED = '#FFFFFF'
     BG_LOCKED  = '#CCDDCC'
-    #                             tuple of shiftpm_fg, shiftrpm_bg, 
+    #                             tuple of shiftpm_fg, shiftrpm_bg,
     #                                       entry_fg    entry_bg
-    ENTRY_COLORS = {GearState.UNUSED:     (BG_UNUSED,  BG_UNUSED,  
-                                           BG_UNUSED,  BG_UNUSED), 
-                    GearState.REACHED:    (BG_UNUSED,  BG_UNUSED,  
-                                           FG_DEFAULT, BG_REACHED), 
-                    GearState.LOCKED:     (BG_REACHED, BG_REACHED, 
-                                           FG_DEFAULT, BG_LOCKED), 
-                    GearState.CALCULATED: (FG_DEFAULT, BG_LOCKED,  
+    ENTRY_COLORS = {GearState.UNUSED:     (BG_UNUSED,  BG_UNUSED,
+                                           BG_UNUSED,  BG_UNUSED),
+                    GearState.REACHED:    (BG_UNUSED,  BG_UNUSED,
+                                           FG_DEFAULT, BG_REACHED),
+                    GearState.LOCKED:     (BG_REACHED, BG_REACHED,
+                                           FG_DEFAULT, BG_LOCKED),
+                    GearState.CALCULATED: (FG_DEFAULT, BG_LOCKED,
                                            FG_DEFAULT, BG_LOCKED)}
 
     def __init__(self, number):
@@ -203,11 +195,11 @@ class GUIGear (Gear):
         self.ratio_var = tkinter.DoubleVar()
         super().__init__(number)
         super().reset()
-        
+
         # self.__init__window(root, number, column, starting_row)
 
     def init_gui_entry(self, root, variable):
-        return tkinter.Entry(root, textvariable=variable, state='readonly', 
+        return tkinter.Entry(root, textvariable=variable, state='readonly',
                              width=self.ENTRY_WIDTH, justify=tkinter.RIGHT)
 
     def init_window(self, root, number, column, starting_row=0):
@@ -217,9 +209,9 @@ class GUIGear (Gear):
         self.ratio_entry = self.init_gui_entry(root, self.ratio_var)
 
         self.label.grid(row=starting_row, column=column)
-        if number != Gears.MAXGEARS:
+        if number != MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
-        self.ratio_entry.grid(row=starting_row+2, column=column)       
+        self.ratio_entry.grid(row=starting_row+2, column=column)
         self.update_entry_colors()
 
     def reset(self):
@@ -238,17 +230,32 @@ class GUIGear (Gear):
         for state, colors in self.ENTRY_COLORS.items():
             if state == self.state:
                 return colors
-    
+
     def update_entry_colors(self):
         shiftrpm_fg, shiftrpm_bg, ratio_fg, ratio_bg = self.get_entry_colors()
 
-        self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg, 
+        self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg,
                                    fg=shiftrpm_fg)
         self.ratio_entry.config(readonlybackground=ratio_bg, fg=ratio_fg)
-        
+
     def to_next_state(self):
         super().to_next_state()
         self.update_entry_colors()
+
+class GUIGears(Gears):
+    LABELS = ['Gear', 'Target', 'Ratio']
+    LABEL_WIDTH = 7
+    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
+    def __init__(self):
+        self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
+
+    def init_window(self, root):
+        for i, text in enumerate(self.LABELS):
+            tkinter.Label(root, text=text, width=self.LABEL_WIDTH,
+                          anchor=tkinter.E).grid(row=i, column=0)
+
+        for i, g in enumerate(self.gears[1:], start=1):
+            g.init_window(root, i, i)
 
 #if the clutch is engaged, we can use engine rpm and wheel rotation speed
 #to derive the ratio between these two: the gear ratio
