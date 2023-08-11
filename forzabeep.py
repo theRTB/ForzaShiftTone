@@ -362,6 +362,8 @@ class ForzaBeep(ForzaUIBase):
         config.write_to(FILENAME_SETTINGS)
         super().close()
 
+
+
 def beep(filename=config.sound_file):
     try:
         winsound.PlaySound(filename,

@@ -13,41 +13,18 @@ from fdp import ForzaDataPacket
 
 from config import config
 
-#base class for a tkinter GUI that listens to UDP for packets by a forza title
-class ForzaUIBase():
-    TITLE = 'ForzaUIBase'
-    WIDTH, HEIGHT = 400, 200
+class ForzaUDPLoop():
     def __init__(self):
         self.threadPool = ThreadPoolExecutor(max_workers=8,
                                              thread_name_prefix="exec")
+        self.isRunning = False
 
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server_socket.settimeout(1)
         self.server_socket.bind((config.ip, config.port))
 
-        self.root = tkinter.Tk()
-        self.root.title(self.TITLE)
-        self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
-        self.root.protocol('WM_DELETE_WINDOW', self.close)
-        self.root.resizable(False, False)
-        
-        self.active = tkinter.IntVar(value=1)
-
-        # self.__init__window()
-
-        # def __init__window(self):
-        #     if self.active.get():
-        #         self.active_handler()
-        #     tkinter.Checkbutton(self.root, text='Active',
-        #                         variable=self.active, 
-        #                         command=self.active_handler).pack()
-        #     self.mainloop()
-
-    def mainloop(self):
-        self.root.mainloop()
-
-    def active_handler(self):
-        if self.active.get():
+    def loop_toggle(self, toggle=None):
+        if toggle and not self.isRunning:
             def starting():
                 self.isRunning = True
                 self.fdp_loop(self.loop_func)
@@ -56,7 +33,9 @@ class ForzaUIBase():
             def stopping():
                 self.isRunning = False
             self.threadPool.submit(stopping)
-
+        return self.isRunning
+    
+    #override loop_func to have a loop with fdp as input
     def loop_func(self, fdp):
         pass
 
@@ -78,6 +57,34 @@ class ForzaUIBase():
         self.isRunning = False
         self.threadPool.shutdown(wait=False)
         self.server_socket.close()
+        
+#base class for a tkinter GUI that listens to UDP for packets by a forza title
+class ForzaUIBase():
+    TITLE = 'ForzaUIBase'
+    WIDTH, HEIGHT = 400, 200
+    def __init__(self):
+        self.root = tkinter.Tk()
+        self.root.title(self.TITLE)
+        self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
+        self.root.protocol('WM_DELETE_WINDOW', self.close)
+        self.root.resizable(False, False)
+
+        # self.__init__window()
+
+        # def __init__window(self):
+        #     if self.active.get():
+        #         self.active_handler()
+        #     tkinter.Checkbutton(self.root, text='Active',
+        #                         variable=self.active, 
+        #                         command=self.active_handler).pack()
+        #     self.mainloop()
+
+    def mainloop(self):
+        self.root.mainloop()
+
+    def close(self):
+        """close program
+        """
         self.root.destroy()
         
 def nextFdp(server_socket: socket, format: str):
