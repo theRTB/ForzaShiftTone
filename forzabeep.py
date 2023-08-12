@@ -227,8 +227,6 @@ class ForzaBeep():
         if self.curve is None or newrun_better:
             self.curve = Curve(self.runcollector.get_run())
             self.set_revlimit(self.curve.get_revlimit())
-
-        if self.curve is None: #let user know we have a curve
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
         elif newrun_better: #force recalculation of rpm if possible
