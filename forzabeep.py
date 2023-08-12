@@ -30,14 +30,14 @@ config.load_from(FILENAME_SETTINGS)
 from gear import GUIGears, MAXGEARS
 from curve import Curve
 from lookahead import Lookahead
-from ForzaUIBase import ForzaUIBase
+from ForzaUIBase import ForzaUDPLoop
 from runcollector import RunCollector
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
                           GUIConfigVariable_Hysteresis, packets_to_ms)
 
-class ForzaBeep(ForzaUIBase):
+class ForzaBeep():
     TITLE = "ForzaShiftTone: Dynamic shift tone for Forza Horizon 5"
     WIDTH, HEIGHT = 745, 255
 
@@ -50,13 +50,22 @@ class ForzaBeep(ForzaUIBase):
     REVLIMIT_BG_CURVE = '#ccddcc'
 
     def __init__(self):
-        super().__init__()
+        self.loop = ForzaUDPLoop(ip=config.ip, port=config.port, 
+                                 packet_format=config.packet_format,
+                                 loop_func=self.loop_func)
+        self.__init__tkinter()
         self.__init__vars()
         self.__init__window()
-        self.mainloop()
+        self.root.mainloop()
+
+    def __init__tkinter(self):
+        self.root = tkinter.Tk()
+        self.root.title(self.TITLE)
+        self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
+        self.root.protocol('WM_DELETE_WINDOW', self.close)
+        self.root.resizable(False, False)
 
     def __init__vars(self):
-        self.isRunning = False
         self.we_beeped = 0
         self.beep_counter = 0
         self.curve = None
@@ -89,6 +98,7 @@ class ForzaBeep(ForzaUIBase):
                             command=self.edit_handler).grid(row=0, column=3,
                                                             sticky=tkinter.W)
         self.edit_handler()
+
 
     def __init__window(self):
         self.gears.init_window(self.root)
@@ -134,7 +144,7 @@ class ForzaBeep(ForzaUIBase):
         tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
                                                   sticky=tkinter.W)
 
-        #defined in ForzaUIBase, controls whether the loop runs
+        self.active = tkinter.IntVar(value=1)
         if self.active.get():     #trigger loop if active by default
             self.active_handler() #comparable to tkinter mainloop func
         tkinter.Checkbutton(self.root, text='Active',
@@ -142,6 +152,9 @@ class ForzaBeep(ForzaUIBase):
                             ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
 
+    def active_handler(self):
+        self.loop.loop_toggle(self.active.get())
+                                   
     def edit_handler(self):
         varlist = [self.revlimit_offset, self.revlimit_percent,
                    self.tone_offset, self.hysteresis]
@@ -151,7 +164,6 @@ class ForzaBeep(ForzaUIBase):
         else:
             for var in varlist:
                 var.config(state=tkinter.DISABLED)
-
     def reset(self, *args):
         self.runcollector.reset()
         self.lookahead.reset()
@@ -360,7 +372,7 @@ class ForzaBeep(ForzaUIBase):
         for variable in gui_vars:
             setattr(config, variable, getattr(self, variable).get())
         config.write_to(FILENAME_SETTINGS)
-        super().close()
+        self.root.destroy()
 
 
 
