@@ -30,7 +30,7 @@ config.load_from(FILENAME_SETTINGS)
 from gear import GUIGears, MAXGEARS
 from curve import Curve
 from lookahead import Lookahead
-from ForzaUIBase import ForzaUDPLoop
+from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
