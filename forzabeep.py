@@ -229,7 +229,7 @@ class ForzaBeep():
             self.set_revlimit(self.curve.get_revlimit())
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
-        elif newrun_better: #force recalculation of rpm if possible
+        if newrun_better: #force recalculation of rpm if possible
             self.gears.newrun_decrease_state()
         self.runcollector.reset()
 
