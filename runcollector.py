@@ -16,11 +16,18 @@ Created on Wed Aug  2 21:03:42 2023
 #   rpm calculations with it.
 class RunCollector():
     MINLEN = 30
+    REMOVE_INITIAL = 10
     def __init__(self):
         self.run = []
         self.state = 'WAIT'
         self.prev_rpm = -1
         self.gear_collected = -1
+
+    def filter_run(self):
+        if len(self.run) > self.REMOVE_INITIAL:
+            self.run = self.run[self.REMOVE_INITIAL:]
+        max_boost = self.run[-1].boost
+        self.run = [p for p in self.run if p.boost >= max_boost*.5]        
 
     def update(self, fdp):
         if self.state == 'WAIT':
@@ -59,9 +66,8 @@ class RunCollector():
 
         if self.state == 'TEST':
             # print("TEST")
-            max_boost = self.run[-1].boost
+            self.filter_run()
             # len_before = len(self.run)
-            self.run = [p for p in self.run if p.boost >= max_boost-1e-03]
             # print(f'TEST len base {len_before} len max boost {len(self.run)}')
             if len(self.run) < self.MINLEN:
                 # print("TEST FAILS MINLEN TEST")
