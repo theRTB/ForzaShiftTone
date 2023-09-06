@@ -18,10 +18,10 @@ from collections import deque
 
 #tell Windows we are DPI aware. We are not, but this gets around
 #tkinter scaling inconsistently.
-import ctypes
-PROCESS_SYSTEM_DPI_AWARE = 1
-PROCESS_PER_MONITOR_DPI_AWARE = 2
-ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
+# import ctypes
+# PROCESS_SYSTEM_DPI_AWARE = 1
+# PROCESS_PER_MONITOR_DPI_AWARE = 2
+# ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
 from config import config, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
@@ -60,6 +60,7 @@ class ForzaBeep():
 
     def __init__tkinter(self):
         self.root = tkinter.Tk()
+        self.root.tk.call('tk', 'scaling', 1.5) #Spyder console fix for DPI too low
         self.root.title(self.TITLE)
         self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
@@ -98,7 +99,6 @@ class ForzaBeep():
                             command=self.edit_handler).grid(row=0, column=3,
                                                             sticky=tkinter.W)
         self.edit_handler()
-
 
     def __init__window(self):
         self.gears.init_window(self.root)
@@ -364,6 +364,7 @@ class ForzaBeep():
         return from_gear or revlimit_pct or revlimit_time
 
     def close(self):
+        self.loop.loop_close()
         #write all GUI configurable settings to the config file
         gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
                     "hysteresis", 'volume']
@@ -371,8 +372,6 @@ class ForzaBeep():
             setattr(config, variable, getattr(self, variable).get())
         config.write_to(FILENAME_SETTINGS)
         self.root.destroy()
-
-
 
 def beep(filename=config.sound_file):
     try:
