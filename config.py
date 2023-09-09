@@ -21,6 +21,8 @@ class config():
                    -30:'audio/audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
     volume = 0
     
+    window_scalar = 1 #scale window by this factor
+    
     #initial revlimit = engine_limit - guess
     #distance between revlimit and engine limit varies between 100 and 2000
     #with the most common value at 500. 750 is the rough average.

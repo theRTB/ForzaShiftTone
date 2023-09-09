@@ -16,12 +16,12 @@ import math
 import winsound
 from collections import deque
 
-#tell Windows we are DPI aware. We are not, but this gets around
+#tell Windows we are DPI aware. We aren't really, but this gets around
 #tkinter scaling inconsistently.
-# import ctypes
-# PROCESS_SYSTEM_DPI_AWARE = 1
-# PROCESS_PER_MONITOR_DPI_AWARE = 2
-# ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
+import ctypes
+PROCESS_SYSTEM_DPI_AWARE = 1
+PROCESS_PER_MONITOR_DPI_AWARE = 2
+ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
 from config import config, FILENAME_SETTINGS
 #load configuration from config.json, class GUIConfigVariable depends on this
@@ -60,11 +60,24 @@ class ForzaBeep():
 
     def __init__tkinter(self):
         self.root = tkinter.Tk()
-        self.root.tk.call('tk', 'scaling', 1.5) #Spyder console fix for DPI too low
         self.root.title(self.TITLE)
-        self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
+        
+        #100% scaling is 96 dpi in Windows, tkinter assumes 72 dpi
+        #we have to fudge width a bit if scaling is 100%
+        #window_scalar allows the user to scale the window up or down
+        #the UI was designed at 150% scaling or 144 dpi
+        screen_dpi = self.root.winfo_fpixels('1i')
+        dpi_factor = (96/72) * (screen_dpi / 96) * config.window_scalar
+        size_factor = screen_dpi / 144 * config.window_scalar
+        width = math.ceil(self.WIDTH * size_factor)
+        height = math.ceil(self.HEIGHT * size_factor)
+        if screen_dpi <= 96.0:
+            width += 40 #hack for 100% size scaling in Windows
+        
+        self.root.geometry(f"{width}x{height}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.resizable(False, False)
+        self.root.tk.call('tk', 'scaling', dpi_factor) #Spyder console fix for DPI too low
 
     def __init__vars(self):
         self.we_beeped = 0
