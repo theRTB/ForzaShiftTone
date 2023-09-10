@@ -19,6 +19,13 @@ class config():
                    -10:'audio/audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
                    -20:'audio/audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
                    -30:'audio/audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
+    
+    notification_file = 'audio/audiocheck.net_sin_1500Hz_-13dBFS_0.05s.wav'
+    notification_gear_count = 2
+    notification_gear_delay = 0.02
+    notification_power_count = 3
+    notification_power_delay = 0.04
+    
     volume = -10
     
     window_scalar = 1 #scale window by this factor
