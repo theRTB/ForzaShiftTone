@@ -14,6 +14,7 @@ from mttkinter import mtTkinter as tkinter
 
 import math
 import winsound
+import time
 from collections import deque
 
 #tell Windows we are DPI aware. We aren't really, but this gets around
@@ -386,6 +387,14 @@ class ForzaBeep():
         config.write_to(FILENAME_SETTINGS)
         self.root.destroy()
 
+def multi_beep(filename=config.sound_file, count=2, delay=0.1):
+    winsound.PlaySound(filename,
+                       winsound.SND_FILENAME | winsound.SND_NODEFAULT)
+    for number in range(count-1):
+        time.sleep(delay)
+        winsound.PlaySound(filename,
+                           winsound.SND_FILENAME | winsound.SND_NODEFAULT)
+ 
 def beep(filename=config.sound_file):
     try:
         winsound.PlaySound(filename,
