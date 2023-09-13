@@ -24,7 +24,7 @@ While it is intended to run in the background without consideration while drivin
 
 ### Anti-cheat shenanigans and browser/Windows warnings
 
-The current release is a one-folder Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will move away from one-file, but remain unsigned as it is not worthwhile.  
+The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will move away from one-file, but remain unsigned as it is not worthwhile.  
 Some Python installations running matplotlib/tkinter seem to trigger FH5's anticheat mechanism and instantly crash the game, but the per-user Anaconda's installation seems to be viable. This started after the DLSS update and Playground Games is unlikely to ever care about or fix this issue. It is unknown why this behavior even applies to Python, it does not make much sense.
 
 ## Implementation
