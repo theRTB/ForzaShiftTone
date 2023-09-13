@@ -15,6 +15,7 @@ class Curve ():
         self.rpm = np.array([p.current_engine_rpm for p in packets])
         self.power = np.array([p.power for p in packets])
         self.torque = np.array([p.torque for p in packets])
+        self.boost = np.array([p.boost for p in packets])
     
     def get_gear(self):
         return self.gear
