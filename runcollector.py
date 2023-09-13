@@ -5,6 +5,8 @@ Created on Wed Aug  2 21:03:42 2023
 @author: RTB
 """
 
+from config import config
+
 #collects an array of packets at full throttle
 #if the user lets go of throttle, changes gear: reset
 #revlimit is confirmed by: the initial run, then x packets with negative power,
@@ -15,8 +17,9 @@ Created on Wed Aug  2 21:03:42 2023
 #   packet, we have a power curve that is complete enough to do shift rpm
 #   rpm calculations with it.
 class RunCollector():
-    MINLEN = 30
-    REMOVE_INITIAL = 10
+    MINLEN = config.runcollector_minlen
+    REMOVE_INITIAL = config.runcollector_remove_initial
+    LOWER_LIMIT_BOOST = config.runcollector_pct_lower_limit_boost
     def __init__(self):
         self.run = []
         self.state = 'WAIT'
@@ -26,8 +29,8 @@ class RunCollector():
     def filter_run(self):
         if len(self.run) > self.REMOVE_INITIAL:
             self.run = self.run[self.REMOVE_INITIAL:]
-        max_boost = self.run[-1].boost
-        self.run = [p for p in self.run if p.boost >= max_boost*.5]        
+        lowest_boost = self.run[-1].boost * self.LOWER_LIMIT_BOOST
+        self.run = [p for p in self.run if p.boost >= lowest_boost]        
 
     def update(self, fdp):
         if self.state == 'WAIT':

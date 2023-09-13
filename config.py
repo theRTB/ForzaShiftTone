@@ -61,6 +61,12 @@ class config():
     log_basic_shiftdata = True
     we_beep_max = 30 #print previous packets for up to x packets after shift
     
+    runcollector_minlen = 30
+    #first few points are a ramp up to proper power, so they can negatively
+    #affect shift rpm calculations slightly
+    runcollector_remove_initial = 5
+    runcollector_pct_lower_limit_boost = .5    
+    
     #as rpm ~ speed, and speed ~ tanh, linear regression + extrapolation 
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
