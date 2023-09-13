@@ -28,9 +28,11 @@ class RunCollector():
 
     def filter_run(self):
         if len(self.run) > self.REMOVE_INITIAL:
-            self.run = self.run[self.REMOVE_INITIAL:]
-        lowest_boost = self.run[-1].boost * self.LOWER_LIMIT_BOOST
-        self.run = [p for p in self.run if p.boost >= lowest_boost]        
+            del self.run[:self.REMOVE_INITIAL]
+        peak_boost = max([p.boost for p in self.run])
+        lowest_boost = peak_boost * self.LOWER_LIMIT_BOOST - 1e-3
+        while len(self.run) > 0 and self.run[0].boost < lowest_boost:
+            del self.run[0]
 
     def update(self, fdp):
         if self.state == 'WAIT':
