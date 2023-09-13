@@ -234,6 +234,11 @@ class ForzaBeep():
         if not self.runcollector.run_completed():
             return
 
+        if config.notification_power_enabled and self.curve is None:
+            multi_beep(config.notification_file,
+                       config.notification_power_count,
+                       config.notification_power_delay)
+
         newrun_better = ( self.curve is not None and
                 self.runcollector.get_revlimit_if_done() > self.get_revlimit()
                 and self.runcollector.get_gear() >= self.curve.get_gear() )
