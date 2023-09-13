@@ -13,8 +13,6 @@ from mttkinter import mtTkinter as tkinter
 #import tkinter.ttk
 
 import math
-import winsound
-import time
 from collections import deque
 
 #tell Windows we are DPI aware. We aren't really, but this gets around
@@ -33,6 +31,7 @@ from curve import Curve
 from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
+from utility import beep, multi_beep
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
@@ -391,22 +390,6 @@ class ForzaBeep():
             setattr(config, variable, getattr(self, variable).get())
         config.write_to(FILENAME_SETTINGS)
         self.root.destroy()
-
-def multi_beep(filename=config.sound_file, count=2, delay=0.1):
-    winsound.PlaySound(filename,
-                       winsound.SND_FILENAME | winsound.SND_NODEFAULT)
-    for number in range(count-1):
-        time.sleep(delay)
-        winsound.PlaySound(filename,
-                           winsound.SND_FILENAME | winsound.SND_NODEFAULT)
- 
-def beep(filename=config.sound_file):
-    try:
-        winsound.PlaySound(filename,
-                           winsound.SND_FILENAME | winsound.SND_ASYNC |
-                           winsound.SND_NODEFAULT)
-    except:
-        print("Sound failed to play")
 
 def main():
     global forzabeep #for debugging
