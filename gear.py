@@ -11,6 +11,10 @@ from collections import deque
 from mttkinter import mtTkinter as tkinter
 import intersect
 
+#import assumes config.load_from has already been called
+from config import config
+from utility import multi_beep
+
 #Forza Horizon 5 is limited to 10 gears (ignoring reverse)
 MAXGEARS = 10
 
@@ -133,6 +137,10 @@ class Gear():
         if var < var_bound and len(self.ratio_deque) >= self.DEQUE_MIN:
             self.to_next_state() #implied from reached to locked
             print(f'LOCKED {self.gear}')
+            if config.notification_gear_enabled:
+                multi_beep(config.notification_file,
+                           config.notification_gear_count,
+                           config.notification_gear_delay)
         self.set_ratio(median)
 
     def calculate_shiftrpm(self, rpm, power, nextgear):
