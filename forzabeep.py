@@ -13,10 +13,9 @@ from mttkinter import mtTkinter as tkinter
 #import tkinter.ttk
 
 import math
-import winsound
 from collections import deque
 
-#tell Windows we are DPI aware. We are not, but this gets around
+#tell Windows we are DPI aware. We aren't really, but this gets around
 #tkinter scaling inconsistently.
 import ctypes
 PROCESS_SYSTEM_DPI_AWARE = 1
@@ -32,6 +31,7 @@ from curve import Curve
 from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
+from utility import beep, multi_beep
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
@@ -61,9 +61,23 @@ class ForzaBeep():
     def __init__tkinter(self):
         self.root = tkinter.Tk()
         self.root.title(self.TITLE)
-        self.root.geometry(f"{self.WIDTH}x{self.HEIGHT}")
+        
+        #100% scaling is 96 dpi in Windows, tkinter assumes 72 dpi
+        #we have to fudge width a bit if scaling is 100%
+        #window_scalar allows the user to scale the window up or down
+        #the UI was designed at 150% scaling or 144 dpi
+        screen_dpi = self.root.winfo_fpixels('1i')
+        dpi_factor = (96/72) * (screen_dpi / 96) * config.window_scalar
+        size_factor = screen_dpi / 144 * config.window_scalar
+        width = math.ceil(self.WIDTH * size_factor)
+        height = math.ceil(self.HEIGHT * size_factor)
+        if screen_dpi <= 96.0:
+            width += 40 #hack for 100% size scaling in Windows
+        
+        self.root.geometry(f"{width}x{height}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.resizable(False, False)
+        self.root.tk.call('tk', 'scaling', dpi_factor) #Spyder console fix for DPI too low
 
     def __init__vars(self):
         self.we_beeped = 0
@@ -98,7 +112,6 @@ class ForzaBeep():
                             command=self.edit_handler).grid(row=0, column=3,
                                                             sticky=tkinter.W)
         self.edit_handler()
-
 
     def __init__window(self):
         self.gears.init_window(self.root)
@@ -219,6 +232,11 @@ class ForzaBeep():
 
         if not self.runcollector.run_completed():
             return
+
+        if config.notification_power_enabled and self.curve is None:
+            multi_beep(config.notification_file,
+                       config.notification_power_count,
+                       config.notification_power_delay)
 
         newrun_better = ( self.curve is not None and
                 self.runcollector.get_revlimit_if_done() > self.get_revlimit()
@@ -364,6 +382,7 @@ class ForzaBeep():
         return from_gear or revlimit_pct or revlimit_time
 
     def close(self):
+        self.loop.loop_close()
         #write all GUI configurable settings to the config file
         gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
                     "hysteresis", 'volume']
@@ -371,16 +390,6 @@ class ForzaBeep():
             setattr(config, variable, getattr(self, variable).get())
         config.write_to(FILENAME_SETTINGS)
         self.root.destroy()
-
-
-
-def beep(filename=config.sound_file):
-    try:
-        winsound.PlaySound(filename,
-                           winsound.SND_FILENAME | winsound.SND_ASYNC |
-                           winsound.SND_NODEFAULT)
-    except:
-        print("Sound failed to play")
 
 def main():
     global forzabeep #for debugging
