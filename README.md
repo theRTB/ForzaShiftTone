@@ -11,21 +11,32 @@ To enable remote telemetry in Forza Horizon 5 on Steam for this application:
   - XBox Data Out is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead and the address modified in config.json. This is untested.
   - For the Microsoft Store version, install the Loopback Utility found on the internet.
 
+## Current release
+If you are unsure which file to pick, download the  **ForzaShiftTone.v0.6.zip** file. 
+The **ForzaShiftTone.v0.6_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
+
+Changes:  
+- Double beep on locking gear ratio per gear
+- Triple beep if the power curve has been succesfully collected the first time
+- Adjustments to filtering for boost to fix some cars never passing the various checks for the power curve
+- Revlimit turns green if a power curve has been collected
+- Various settings have been softcoded into _config.json_
+- First attempt to fix scaling according to Windows DPI scaling
+
 ## Considerations
 
 While it is intended to run in the background without consideration while driving, there are some requirements to having accurate shift tones:
-- Drive for over one second in a single gear on road. After this the gear values will lock and turn green
+- Drive for over one second in a single gear on road. After this the gear values will lock and turn green. There will be a short double beep.
   - Road surfaces are far more accurate than dirt/off-road
   - For AWD cars: maintain throttle at a fixed amount at speed
-- Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts
+- Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts and ignore the shift beep. There will be a short triple beep if succesful.
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline
   - Boost is taken into account. Some cars with very high boost may require a run at relatively low rpm in a relatively high gear to ensure enough data points at peak boost
 - a more accurate rev limit is derived from the required run. Defaults to maximum engine rpm minus 750
 
-### Anti-cheat shenanigans and browser/Windows warnings
+### Browser/Windows warnings
 
-The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will move away from one-file, but remain unsigned as it is not worthwhile.  
-Some Python installations running matplotlib/tkinter seem to trigger FH5's anticheat mechanism and instantly crash the game, but the per-user Anaconda's installation seems to be viable. This started after the DLSS update and Playground Games is unlikely to ever care about or fix this issue. It is unknown why this behavior even applies to Python, it does not make much sense.
+The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will remain unsigned as it is not worthwhile.  
 
 ## Implementation
 The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
@@ -57,4 +68,3 @@ There is one packet per 16.667 milliseconds, approximately.
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
 - Edit tickbox: If unticked, the up and down arrows for the Tone offset, Revlimit ms/% and Hysteresis values do not function. This is to avoid accidental clicks.
 - Reset button: If pressed, reset revlimit and all values for all gears. Configuration values are unchanged. If the UI is unresponsive, restart the application.
-
