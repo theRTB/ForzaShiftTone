@@ -46,13 +46,13 @@ class config():
     tone_offset_upper = 25
     tone_offset_outlier = 30 #discard for dynamic tone if above this distance
     
-    revlimit_percent = 0.996 #respected rev limit for trigger revlimit as pct%
+    revlimit_percent = 0.992 #respected rev limit for trigger revlimit as pct%
     revlimit_percent_lower = 0.950
     revlimit_percent_upper = 0.998
     
     revlimit_offset = 5 #additional buffer in x packets for revlimit
     revlimit_offset_lower = 3
-    revlimit_offset_upper = 8
+    revlimit_offset_upper = 9
     
     hysteresis = 1
     hysteresis_steps = [0, 1, 5, 25, 50, 100, 250, 500]
