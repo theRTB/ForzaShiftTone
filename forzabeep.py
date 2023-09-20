@@ -312,7 +312,7 @@ class ForzaBeep():
             self.beep_counter -= 1
 
     def loop_guess_revlimit(self, fdp):
-        if self.get_revlimit() == -1:
+        if self.get_revlimit() == -1 and config.revlimit_guess != -1:
             self.set_revlimit(fdp.engine_max_rpm - config.revlimit_guess)
             self.revlimit_entry.configure(
                                     readonlybackground=self.REVLIMIT_BG_GUESS)
