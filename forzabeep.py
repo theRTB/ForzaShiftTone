@@ -104,13 +104,13 @@ class ForzaBeep():
         self.car_ordinal = None
 
     def __init__window_buffers_frame(self, row):
-        frame = tkinter.LabelFrame(self.root, text='Buffers / Configurables')
+        frame = tkinter.LabelFrame(self.root, text='Variables')
         frame.grid(row=row, column=5, rowspan=4, columnspan=4, stick='EW')
 
-        self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 0)
-        self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 1)
-        self.tone_offset = GUIConfigVariable_ToneOffset(frame, 2)
-        self.hysteresis = GUIConfigVariable_Hysteresis(frame, 3)
+        self.tone_offset = GUIConfigVariable_ToneOffset(frame, 0)
+        self.hysteresis = GUIConfigVariable_Hysteresis(frame, 1)
+        self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 2)
+        self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 3)
 
         self.edit_var = tkinter.IntVar(value=0)
         tkinter.Checkbutton(frame, text='Edit', variable=self.edit_var,
