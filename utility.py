@@ -28,3 +28,19 @@ def beep(filename=config.sound_file):
                            winsound.SND_NODEFAULT)
     except:
         print("Sound failed to play")
+        
+#convert a packet rate of 60hz to integer milliseconds
+def packets_to_ms(val):
+    return int(1000*val/60)
+
+#convert integer milliseconds to a packet rate of 60hz
+def ms_to_packets(val):
+    return int(round(60*int(val)/1000, 0))
+
+#factor is a scalar
+def factor_to_percent(val):
+    return round(100*val, 1)
+
+#factor is a scalar
+def percent_to_factor(val):
+    return float(val)/100

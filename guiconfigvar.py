@@ -11,6 +11,9 @@ from config import config
 from collections import deque
 from mttkinter import mtTkinter as tkinter
 
+from utility import (packets_to_ms, ms_to_packets, 
+                     factor_to_percent, percent_to_factor)
+
 #maintain a rolling array of the time between beep and actual shift
 #caps to the lower and upper limits of the tone_offset variable to avoid
 #outliers such as 0 ms reaction time or a delay of seconds or more
@@ -194,19 +197,3 @@ class GUIConfigVariable_Hysteresis(GUIConfigVariable):
                          convert_to_gui=lambda x: x,
                          values=config.hysteresis_steps,
                          value=self.DEFAULTVALUE)
-
-#convert a packet rate of 60hz to integer milliseconds
-def packets_to_ms(val):
-    return int(1000*val/60)
-
-#convert integer milliseconds to a packet rate of 60hz
-def ms_to_packets(val):
-    return int(round(60*int(val)/1000, 0))
-
-#factor is a scalar
-def factor_to_percent(val):
-    return round(100*val, 1)
-
-#factor is a scalar
-def percent_to_factor(val):
-    return float(val)/100

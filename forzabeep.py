@@ -31,11 +31,11 @@ from curve import Curve
 from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
-from utility import beep, multi_beep
+from utility import beep, multi_beep, packets_to_ms
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
-                          GUIConfigVariable_Hysteresis, packets_to_ms)
+                          GUIConfigVariable_Hysteresis)
 
 #main class for ForzaShiftTone
 #it is responsible for creating and managing the tkinter window
