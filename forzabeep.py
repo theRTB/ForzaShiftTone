@@ -153,6 +153,7 @@ class ForzaBeep():
 
         row += 1 #continue on next row
 
+        self.update_rpm = True
         self.rpm = tkinter.IntVar(value=0)
         tkinter.Label(self.root, text='Tach').grid(row=row, column=0,
                                                   sticky=tkinter.E)
@@ -193,6 +194,7 @@ class ForzaBeep():
         self.car_ordinal = None
 
         self.rpm.set(0)
+        self.update_rpm = True
         self.revlimit = -1
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
 
@@ -298,7 +300,7 @@ class ForzaBeep():
             if beep_distance is not None:
                 beep_distance_ms = packets_to_ms(beep_distance)
             if config.log_basic_shiftdata:
-                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {target} target, {shiftrpm - target:4.0f} difference, {beep_distance_ms} ms distance to beep")
+                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {target:.0f} target, {shiftrpm - target:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
         self.we_beeped = 0
         self.shiftdelay_deque.clear()
@@ -333,7 +335,9 @@ class ForzaBeep():
             return
 
         rpm = fdp.current_engine_rpm
-        self.rpm.set(int(rpm))
+        if self.update_rpm:
+            self.rpm.set(int(rpm))
+        self.update_rpm = not self.update_rpm #halve RPM update frequency
 
         self.loop_car_ordinal(fdp) #reset if car ordinal changes
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
