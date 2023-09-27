@@ -10,6 +10,9 @@ import winsound
 
 from config import config
 
+#multibeep has a simple sleep in it, which will freeze the UI if called
+#we could probably throw this function into the ThreadPool at the cost of
+#consistency
 def multi_beep(filename=config.sound_file, count=2, delay=0.1):
     winsound.PlaySound(filename,
                        winsound.SND_FILENAME | winsound.SND_NODEFAULT)

@@ -37,6 +37,11 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_ToneOffset,
                           GUIConfigVariable_Hysteresis, packets_to_ms)
 
+#main class for ForzaShiftTone
+#it is responsible for creating and managing the tkinter window
+#and maintains the loop logic
+#splitting these two has resulted in the window not responding for several
+#seconds after launching, despite the back-end still updating
 class ForzaBeep():
     TITLE = "ForzaShiftTone: Dynamic shift tone for Forza Horizon 5"
     WIDTH, HEIGHT = 745, 255
@@ -177,6 +182,7 @@ class ForzaBeep():
         else:
             for var in varlist:
                 var.config(state=tkinter.DISABLED)
+                
     def reset(self, *args):
         self.runcollector.reset()
         self.lookahead.reset()
@@ -261,7 +267,7 @@ class ForzaBeep():
     #where the shift starts
     #tone_offset.counter runs until a shift upwards happens
     #if so, we run backwards until the packet where power is negative and
-    #the previous packet's power  is positive: the actual point of shifting
+    #the previous packet's power is positive: the actual point of shifting
     def loop_test_for_shiftrpm(self, fdp):
         if (len(self.shiftdelay_deque) == 0 or 
             self.shiftdelay_deque[0].gear == fdp.gear):
@@ -285,14 +291,14 @@ class ForzaBeep():
             prev_packet = packet
             self.tone_offset.decrement_counter()
         if shiftrpm is not None:
-            optimal = self.gears.get_shiftrpm_of(fdp.gear-1)
+            target = self.gears.get_shiftrpm_of(fdp.gear-1)
             beep_distance = self.tone_offset.get_counter()
             self.tone_offset.finish_counter() #update dynamic offset logic
             beep_distance_ms = 'N/A'
             if beep_distance is not None:
                 beep_distance_ms = packets_to_ms(beep_distance)
             if config.log_basic_shiftdata:
-                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {optimal} optimal, {shiftrpm - optimal:4.0f} difference, {beep_distance_ms} ms distance to beep")
+                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {target} target, {shiftrpm - target:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
         self.we_beeped = 0
         self.shiftdelay_deque.clear()

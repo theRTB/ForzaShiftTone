@@ -10,7 +10,7 @@ from os.path import exists
 FILENAME_SETTINGS = 'config.json'
 
 class config():
-    ip = '127.0.0.1'
+    ip = '127.0.0.1' #TODO: test if leaving this empty works better
     port = 12350
     packet_format = 'fh4'
     
@@ -28,14 +28,15 @@ class config():
     notification_power_count = 3
     notification_power_delay = 0.04
     
-    volume = -10
+    volume = -10 #default volume
     
     window_scalar = 1 #scale window by this factor
     
     #initial revlimit = engine_limit - guess
     #distance between revlimit and engine limit varies between 100 and 2000
     #with the most common value at 500. 750 is the rough average.
-    revlimit_guess = 750
+    #updated: disabled due to having little to no benefit
+    revlimit_guess = -1
     
     beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
@@ -65,7 +66,9 @@ class config():
     #first few points are a ramp up to proper power, so they can negatively
     #affect shift rpm calculations slightly
     runcollector_remove_initial = 5
-    runcollector_pct_lower_limit_boost = .5    
+    #power curve has a minimum boost of 50% of maximum boost
+    #points below this will be discarded
+    runcollector_pct_lower_limit_boost = .5
     
     #as rpm ~ speed, and speed ~ tanh, linear regression + extrapolation 
     #overestimates slope and intercept. Keeping the deque short limits this
