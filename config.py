@@ -55,7 +55,7 @@ class config():
     revlimit_offset_lower = 3
     revlimit_offset_upper = 10
         
-    hysteresis_percent = 0.01
+    hysteresis_percent = 0.005
     hysteresis_percent_lower = 0.00
     hysteresis_percent_upper = 0.051 #up to 0.05
     
