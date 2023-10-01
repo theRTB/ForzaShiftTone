@@ -201,4 +201,4 @@ class GUIConfigVariable_HysteresisPercent(GUIConfigVariable):
                          value=self.DEFAULTVALUE)
     
     def as_rpm(self, fdp):
-        return self.get() * fdp.max_engine_rpm
+        return self.get() * fdp.engine_max_rpm
