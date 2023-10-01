@@ -224,7 +224,8 @@ class ForzaBeep():
         if abs(rpm - self.hysteresis_rpm) >= self.hysteresis.get():
             self.hysteresis_rpm = rpm
 
-    def loop_car_ordinal(self, fdp):
+    #reset if the car_ordinal or the PI changes
+    def loop_test_car_changed(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
             self.car_ordinal = fdp.car_ordinal
             self.car_performance_index = fdp.car_performance_index
@@ -240,7 +241,6 @@ class ForzaBeep():
             self.car_performance_index = fdp.car_performance_index
             print(f"PI changed {fdp.car_performance_index} resetting!")
             
-
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
     #we test if this leads to a more accurate run with a better rev limit
@@ -349,7 +349,7 @@ class ForzaBeep():
             self.rpm.set(int(rpm))
         self.update_rpm = not self.update_rpm #halve RPM update frequency
 
-        self.loop_car_ordinal(fdp) #reset if car ordinal changes
+        self.loop_test_car_changed(fdp) #reset if car ordinal/PI changes
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
         self.loop_hysteresis(fdp) #update self.hysteresis_rpm
         self.lookahead.add(self.hysteresis_rpm) #update linear regresion
