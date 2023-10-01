@@ -102,6 +102,7 @@ class ForzaBeep():
         self.hysteresis_rpm = 0
 
         self.car_ordinal = None
+        self.car_performance_index = None
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Variables')
@@ -191,7 +192,9 @@ class ForzaBeep():
         self.we_beeped = 0
         self.beep_counter = 0
         self.curve = None
+        
         self.car_ordinal = None
+        self.car_performance_index = None
 
         self.rpm.set(0)
         self.update_rpm = True
@@ -224,12 +227,19 @@ class ForzaBeep():
     def loop_car_ordinal(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
             self.car_ordinal = fdp.car_ordinal
+            self.car_performance_index = fdp.car_performance_index
         elif fdp.car_ordinal == 0:
             return
         elif self.car_ordinal != fdp.car_ordinal:
             self.reset()
             self.car_ordinal = fdp.car_ordinal
-            print(f"Ordinal changed to {self.car_ordinal}, resetting!")
+            self.car_performance_index = fdp.car_performance_index
+            print(f"Ordinal changed to {self.car_ordinal}, PI {fdp.car_performance_index} resetting!")
+        elif self.car_performance_index != fdp.car_performance_index:
+            self.reset()
+            self.car_performance_index = fdp.car_performance_index
+            print(f"PI changed {fdp.car_performance_index} resetting!")
+            
 
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
