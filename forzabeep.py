@@ -243,6 +243,7 @@ class ForzaBeep():
             self.reset()
             self.car_performance_index = fdp.car_performance_index
             print(f"PI changed {fdp.car_performance_index} resetting!")
+            print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
             
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
