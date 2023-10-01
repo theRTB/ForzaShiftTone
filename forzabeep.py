@@ -230,6 +230,7 @@ class ForzaBeep():
         if self.car_ordinal is None and fdp.car_ordinal != 0:
             self.car_ordinal = fdp.car_ordinal
             self.car_performance_index = fdp.car_performance_index
+            print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
         elif fdp.car_ordinal == 0:
             return
         elif self.car_ordinal != fdp.car_ordinal:
@@ -237,6 +238,7 @@ class ForzaBeep():
             self.car_ordinal = fdp.car_ordinal
             self.car_performance_index = fdp.car_performance_index
             print(f"Ordinal changed to {self.car_ordinal}, PI {fdp.car_performance_index} resetting!")
+            print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
         elif self.car_performance_index != fdp.car_performance_index:
             self.reset()
             self.car_performance_index = fdp.car_performance_index
