@@ -35,7 +35,7 @@ from utility import beep, multi_beep, packets_to_ms
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
-                          GUIConfigVariable_Hysteresis)
+                          GUIConfigVariable_HysteresisPercent)
 
 #main class for ForzaShiftTone
 #it is responsible for creating and managing the tkinter window
@@ -99,7 +99,7 @@ class ForzaBeep():
 
         self.shiftdelay_deque = deque(maxlen=120)
 
-        self.hysteresis_rpm = 0
+        self.rpm_hysteresis = 0
 
         self.car_ordinal = None
         self.car_performance_index = None
@@ -109,7 +109,7 @@ class ForzaBeep():
         frame.grid(row=row, column=5, rowspan=4, columnspan=4, stick='EW')
 
         self.tone_offset = GUIConfigVariable_ToneOffset(frame, 0)
-        self.hysteresis = GUIConfigVariable_Hysteresis(frame, 1)
+        self.hysteresis_percent = GUIConfigVariable_HysteresisPercent(frame, 1)
         self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 2)
         self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 3)
 
@@ -177,7 +177,7 @@ class ForzaBeep():
                                    
     def edit_handler(self):
         varlist = [self.revlimit_offset, self.revlimit_percent,
-                   self.tone_offset, self.hysteresis]
+                   self.tone_offset, self.hysteresis_percent]
         if self.edit_var.get():
             for var in varlist:
                 var.config(state='readonly')
@@ -203,7 +203,7 @@ class ForzaBeep():
 
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
-        self.hysteresis_rpm = 0
+        self.rpm_hysteresis = 0
 
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
 
@@ -221,8 +221,9 @@ class ForzaBeep():
 
     def loop_hysteresis(self, fdp):
         rpm = fdp.current_engine_rpm
-        if abs(rpm - self.hysteresis_rpm) >= self.hysteresis.get():
-            self.hysteresis_rpm = rpm
+        hysteresis = self.hysteresis_percent.as_rpm(fdp)
+        if abs(rpm - self.rpm_hysteresis) >= hysteresis:
+            self.rpm_hysteresis = rpm
 
     #reset if the car_ordinal or the PI changes
     def loop_test_car_changed(self, fdp):
@@ -351,8 +352,8 @@ class ForzaBeep():
 
         self.loop_test_car_changed(fdp) #reset if car ordinal/PI changes
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
-        self.loop_hysteresis(fdp) #update self.hysteresis_rpm
-        self.lookahead.add(self.hysteresis_rpm) #update linear regresion
+        self.loop_hysteresis(fdp) #update self.rpm_hysteresis
+        self.lookahead.add(self.rpm_hysteresis) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
         self.gears.update_of(gear, fdp) #update gear ratio and state of gear
         self.loop_calculate_shiftrpms() #derive shift
@@ -405,7 +406,7 @@ class ForzaBeep():
         self.loop.loop_close()
         #write all GUI configurable settings to the config file
         gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
-                    "hysteresis", 'volume']
+                    'hysteresis_percent', 'volume']
         for variable in gui_vars:
             setattr(config, variable, getattr(self, variable).get())
         config.write_to(FILENAME_SETTINGS)

@@ -49,14 +49,15 @@ class config():
     
     revlimit_percent = 0.985 #respected rev limit for trigger revlimit as pct%
     revlimit_percent_lower = 0.950
-    revlimit_percent_upper = 0.998
+    revlimit_percent_upper = 0.998 #includes .998 due to floating point
     
     revlimit_offset = 6 #additional buffer in x packets for revlimit
     revlimit_offset_lower = 3
     revlimit_offset_upper = 10
-    
-    hysteresis = 1
-    hysteresis_steps = [0, 1, 5, 25, 50, 100, 250, 500]
+        
+    hysteresis_percent = 0.01
+    hysteresis_percent_lower = 0.00
+    hysteresis_percent_upper = 0.051 #up to 0.05
     
     log_full_shiftdata = False
     log_basic_shiftdata = True
@@ -73,7 +74,7 @@ class config():
     #as rpm ~ speed, and speed ~ tanh, linear regression + extrapolation 
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
-    linreg_len_max = 20 
+    linreg_len_max = 20
         
     @classmethod
     def get_dict(cls):

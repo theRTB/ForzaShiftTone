@@ -186,14 +186,19 @@ class GUIConfigVariable_RevlimitPercent(GUIConfigVariable):
                          values=np.arange(self.LOWER, self.UPPER, 0.001),
                          value=self.DEFAULTVALUE)
 
-class GUIConfigVariable_Hysteresis(GUIConfigVariable):
+class GUIConfigVariable_HysteresisPercent(GUIConfigVariable):
     NAME = 'Hysteresis'
-    DEFAULTVALUE = config.hysteresis
-    UNIT = 'rpm'
+    DEFAULTVALUE = config.hysteresis_percent
+    LOWER = config.hysteresis_percent_lower
+    UPPER = config.hysteresis_percent_upper
+    UNIT = '%'
 
     def __init__(self, root, row, column=0):
         super().__init__(root=root, name=self.NAME, unit=self.UNIT, row=row,
-                         convert_from_gui=lambda x: int(x), column=column,
-                         convert_to_gui=lambda x: x,
-                         values=config.hysteresis_steps,
+                         convert_from_gui=percent_to_factor,
+                         convert_to_gui=factor_to_percent,
+                         values=np.arange(self.LOWER, self.UPPER, 0.001),
                          value=self.DEFAULTVALUE)
+    
+    def as_rpm(self, fdp):
+        return self.get() * fdp.max_engine_rpm
