@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Horizon 5.**
 
-![example v0.6 BMW M5 2018](images/sample-BMW-M5-2018-9.png)
+![example v0.65 BMW M5 2018](images/sample-BMW-M5-2018-10.png)
 
 ## TL;DR
 
@@ -22,16 +22,18 @@ To enable remote telemetry in Forza Horizon 5 on Steam for this application:
 
 ## Current release
 
-If you are unsure which file to pick, download the  **ForzaShiftTone.v0.6.zip** file. 
-The **ForzaShiftTone.v0.6_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
+If you are unsure which file to pick, download the  **ForzaShiftTone.v0.65.zip** file. 
+The **ForzaShiftTone.v0.65_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
 
 Changes:  
-- Double beep on locking gear ratio per gear
-- Triple beep if the power curve has been succesfully collected the first time
-- Adjustments to filtering for boost to fix some cars never passing the various checks for the power curve
-- Revlimit turns green if a power curve has been collected
-- Various settings have been softcoded into _config.json_
-- First attempt to fix scaling according to Windows DPI scaling
+- *Revlimit guess disabled: program will _not_ beep until gears plus power curve have been collected.*
+- Power curve locks if it's three or more seconds long
+- Hysteris defaults to percentage of engine_max_rpm
+- Updated debug target shift rpm to be dynamic (Only for _debug build)
+- PI changes now cause a reset
+- Respected rev limit at 98.5% by default
+- Additional tone offset to 100ms from 83ms for revlimit time distance trigger
+- Hysteresis defaults to 0.5% of engine_max_rpm
 
 ## Considerations
 
@@ -57,7 +59,7 @@ There are three triggers:
 - Shift RPM: The RPM value at which power in the current becomes lower than the power in the next gear: the ideal time to upshift. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
   - Example: A rev limit of 7850 and a value of 99.2% triggers a beep if it predicts 7787.2 rpm will be reached in 283 milliseconds
-- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 83 milliseconds, which leads to a prediction distance of 367ms.
+- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 100 milliseconds, which leads to a prediction distance of 383ms.
 
 The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers.  
 If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
@@ -75,11 +77,11 @@ There is one packet per 16.667 milliseconds, approximately.
 
 ### General configuration:
 
-- Revlimit: The limit on engine RPM by its own power. Initial guess is maximum engine rpm minus 750. Revlimit is derived upon finishing a full throttle sweep up to revlimit.
+- Revlimit: The limit on engine RPM by its own power. Revlimit is derived upon finishing a full throttle sweep up to revlimit.
 - Tone offset: Predicted distance between the beep trigger and the trigger rpm value. This should not be taken as reaction time and minimized. It should be regarded as the time you can consistently respond to the tone with the least amount of mental effort. Defaults to 283 ms.
 - Revlimit %: The respected rev limit in percentage of actual rev limit. This is to create a buffer for transients that could cause the engine to cut out due to hitting actual rev limit. Defaults to 99.2%.
 - Revlimit ms: The minimum predicted distance to actual rev limit. This is to create a buffer for fast changes in RPM that would otherwise lead to hitting actual rev limit, such as in first gear. Defaults to 83ms.
-- Hysteresis: Hysteresis may be set as another layer to smooth rpm. An intermediary rpm value is updated only if the change in rpm is larger than the hysteresis value, which is then used for the shift beep tests. Defaults to 1 rpm currently.
+- Hysteresis: Hysteresis may be set as another layer to smooth rpm. An intermediary rpm value is updated only if the change in rpm is larger than the hysteresis value, which is then used for the shift beep tests. Defaults to 0.5% of maximun engine RPM.
 - Volume: Adjusts the volume of the beep in four steps total. Each step is about half as loud as the previous, where the loudest is the default.
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
 - Edit tickbox: If unticked, the up and down arrows for the Tone offset, Revlimit ms/% and Hysteresis values do not function. This is to avoid accidental clicks.
