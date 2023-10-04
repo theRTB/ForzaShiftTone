@@ -87,6 +87,7 @@ class ForzaBeep():
     def __init__vars(self):
         self.we_beeped = 0
         self.beep_counter = 0
+        self.debug_target_rpm = -1
         self.curve = None
 
         self.gears = GUIGears()
@@ -191,6 +192,7 @@ class ForzaBeep():
 
         self.we_beeped = 0
         self.beep_counter = 0
+        self.debug_target_rpm = -1
         self.curve = None
         
         self.car_ordinal = None
@@ -293,6 +295,7 @@ class ForzaBeep():
         if self.shiftdelay_deque[0].gear > fdp.gear: #reset on downshift
             self.shiftdelay_deque.clear()
             self.tone_offset.reset_counter()
+            self.debug_target_rpm = -1 #reset target rpm
             return
             
         #case gear has gone up
@@ -307,7 +310,7 @@ class ForzaBeep():
             prev_packet = packet
             self.tone_offset.decrement_counter()
         if shiftrpm is not None:
-            target = self.gears.get_shiftrpm_of(fdp.gear-1)
+            target = self.debug_target_rpm
             beep_distance = self.tone_offset.get_counter()
             self.tone_offset.finish_counter() #update dynamic offset logic
             beep_distance_ms = 'N/A'
@@ -317,6 +320,7 @@ class ForzaBeep():
                 print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {target:.0f} target, {shiftrpm - target:4.0f} difference, {beep_distance_ms} ms distance to beep")
                 print("-"*50)
         self.we_beeped = 0
+        self.debug_target_rpm = -1
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
 
@@ -382,6 +386,12 @@ class ForzaBeep():
         return (self.lookahead.test(target_rpm, offset, torque_ratio),
                 torque_ratio)
 
+    def update_target_rpm(self, val):
+        if self.debug_target_rpm == -1:
+            self.debug_target_rpm = val
+        else:
+            self.debug_target_rpm = min(self.debug_target_rpm, val)
+
     def test_for_beep(self, shiftrpm, revlimit, fdp):
         if fdp.accel < config.min_throttle_for_beep:
             return False
@@ -396,6 +406,15 @@ class ForzaBeep():
         revlimit_time, revlimit_time_ratio = self.torque_ratio_test(
             revlimit, (tone_offset + self.revlimit_offset.get()), fdp)
 
+        if from_gear:
+            self.update_target_rpm(shiftrpm)
+        if revlimit_pct:
+            factor = self.revlimit_percent.get()
+            self.update_target_rpm(revlimit*factor)
+        if revlimit_time:
+            slope, intercept = self.lookahead.slope, self.lookahead.intercept
+            self.update_target_rpm(intercept + slope*tone_offset)
+        
         if from_gear and config.log_full_shiftdata:
             print(f'beep from_gear: {shiftrpm}, gear {fdp.gear} rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} trq_ratio {from_gear_ratio:.2f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f}')
         if revlimit_pct and config.log_full_shiftdata:
