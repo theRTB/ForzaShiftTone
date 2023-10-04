@@ -247,12 +247,13 @@ class ForzaBeep():
             
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
-    #we test if this leads to a more accurate run with a better rev limit
-    #defined
+    #test if this leads to a more accurate run with a better rev limit defined
+    #we stop testing if the run is long enough using the variable in config:
+    #runcollector_minlen_lock
     def loop_runcollector(self, fdp):
         self.runcollector.update(fdp)
 
-        if not self.runcollector.run_completed():
+        if not self.runcollector.is_run_completed():
             return
 
         if config.notification_power_enabled and self.curve is None:
@@ -260,9 +261,8 @@ class ForzaBeep():
                        config.notification_power_count,
                        config.notification_power_delay)
 
-        newrun_better = ( self.curve is not None and
-                self.runcollector.get_revlimit_if_done() > self.get_revlimit()
-                and self.runcollector.get_gear() >= self.curve.get_gear() )
+        newrun_better = (self.curve is not None and
+                         self.runcollector.is_newrun_better(self.curve))
 
         if self.curve is None or newrun_better:
             self.curve = Curve(self.runcollector.get_run())
@@ -271,7 +271,11 @@ class ForzaBeep():
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
         if newrun_better: #force recalculation of rpm if possible
             self.gears.newrun_decrease_state()
-        self.runcollector.reset()
+            
+        if self.runcollector.is_run_final():
+            self.runcollector.set_run_final()
+        else:
+            self.runcollector.reset()
 
     def loop_calculate_shiftrpms(self):
         if self.curve is None:
