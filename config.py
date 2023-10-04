@@ -64,6 +64,7 @@ class config():
     we_beep_max = 30 #print previous packets for up to x packets after shift
     
     runcollector_minlen = 30
+    runcollector_minlen_lock = 180
     #first few points are a ramp up to proper power, so they can negatively
     #affect shift rpm calculations slightly
     runcollector_remove_initial = 5
