@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Horizon 5.**
 
-![example v0.4 BMW M5 2018](images/sample-BMW-M5-2018-9.png)
+![example v0.6 BMW M5 2018](images/sample-BMW-M5-2018-9.png)
 
 ## TL;DR
 
