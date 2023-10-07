@@ -1,6 +1,6 @@
 intersect==1.2
 matplotlib==3.5.0
-numpy==1.21.4
+numpy==1.23.5
 pynput==1.7.5
 pywin32==302
 PyYAML==6.0
