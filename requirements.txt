@@ -5,4 +5,4 @@ pynput==1.7.5
 pywin32==302
 PyYAML==6.0
 scipy==1.7.3
-mttinker=0.6.1
+mttinker==0.6.1
