@@ -2,7 +2,7 @@ intersect==1.2
 matplotlib==3.5.0
 numpy==1.23.5
 pynput==1.7.5
-pywin32==302
+pywin32==305.1
 PyYAML==6.0
 scipy==1.7.3
 mttinker==0.6.1
