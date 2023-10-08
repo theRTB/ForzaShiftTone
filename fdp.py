@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 '''
 
-from struct import unpack, pack
+from struct import unpack, pack, calcsize
 
 ## Documentation of the packet format is available on
 ## https://forums.forzamotorsport.net/turn10_postsm926839_Forza-Motorsport-7--Data-Out--feature-details.aspx#post_926839
@@ -80,6 +80,14 @@ class ForzaDataPacket:
     ## first int related to car category, two? ints related to hitting objects
     fh4_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiiiiifffffffffffffffffHBBBBBBbbb'
 
+    ## Format string for the FM8 format
+    ## 20 bytes after the regular dash structure, unknown data
+    fm8_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb5i'
+
+    #create lookup table for packet structure detection by packet size
+    lookup_format = { calcsize(f):f for f in [sled_format, dash_format, 
+                                              fh4_format, fm8_format] }
+
     ## Names of the properties in the order they're featured in the packet:
     sled_props = [
         'is_race_on', 'timestamp_ms',
@@ -123,12 +131,12 @@ class ForzaDataPacket:
                   'gear', 'steer',
                   'norm_driving_line', 'norm_ai_brake_diff']
 
-    def __init__(self, data, packet_format='dash'):
-        ## The format this data packet was created with:
+    def __init__(self, data, packet_format=None):
+        ## The format this data packet was created with, or determine format
+        ## through packet size if the format is not defined
+        if packet_format is None:
+            packet_format = self.lookup_format.get(len(data), 'dash')
         self.packet_format = packet_format
-
-        #TODO: phase out this variable (in Trace as well)
-        self.data = data #add raw data to object to save to Trace
 
         ## zip makes for convenient flexibility when mapping names to
         ## values in the data packet:
@@ -222,49 +230,4 @@ class ForzaDataPacket:
             return('{0.is_race_on}\t{0.timestamp_ms}\t{0.engine_max_rpm:f}\t{0.engine_idle_rpm:f}\t{0.current_engine_rpm:f}\t{0.acceleration_x:f}\t{0.acceleration_y:f}\t{0.acceleration_z:f}\t{0.velocity_x:f}\t{0.velocity_y:f}\t{0.velocity_z:f}\t{0.angular_velocity_x:f}\t{0.angular_velocity_y:f}\t{0.angular_velocity_z:f}\t{0.yaw:f}\t{0.pitch:f}\t{0.roll:f}\t{0.norm_suspension_travel_FL:f}\t{0.norm_suspension_travel_FR:f}\t{0.norm_suspension_travel_RL:f}\t{0.norm_suspension_travel_RR:f}\t{0.tire_slip_ratio_FL:f}\t{0.tire_slip_ratio_FR:f}\t{0.tire_slip_ratio_RL:f}\t{0.tire_slip_ratio_RR:f}\t{0.wheel_rotation_speed_FL:f}\t{0.wheel_rotation_speed_FR:f}\t{0.wheel_rotation_speed_RL:f}\t{0.wheel_rotation_speed_RR:f}\t{0.wheel_on_rumble_strip_FL:f}\t{0.wheel_on_rumble_strip_FR:f}\t{0.wheel_on_rumble_strip_RL:f}\t{0.wheel_on_rumble_strip_RR:f}\t{0.wheel_in_puddle_FL:f}\t{0.wheel_in_puddle_FR:f}\t{0.wheel_in_puddle_RL:f}\t{0.wheel_in_puddle_RR:f}\t{0.surface_rumble_FL:f}\t{0.surface_rumble_FR:f}\t{0.surface_rumble_RL:f}\t{0.surface_rumble_RR:f}\t{0.tire_slip_angle_FL:f}\t{0.tire_slip_angle_FR:f}\t{0.tire_slip_angle_RL:f}\t{0.tire_slip_angle_RR:f}\t{0.tire_combined_slip_FL:f}\t{0.tire_combined_slip_FR:f}\t{0.tire_combined_slip_RL:f}\t{0.tire_combined_slip_RR:f}\t{0.suspension_travel_meters_FL:f}\t{0.suspension_travel_meters_FR:f}\t{0.suspension_travel_meters_RL:f}\t{0.suspension_travel_meters_RR:f}\t{0.car_ordinal}\t{0.car_class}\t{0.car_performance_index}\t{0.drivetrain_type}\t{0.num_cylinders}'.format(self))
 
         return('{0.is_race_on}\t{0.timestamp_ms}\t{0.engine_max_rpm:f}\t{0.engine_idle_rpm:f}\t{0.current_engine_rpm:f}\t{0.acceleration_x:f}\t{0.acceleration_y:f}\t{0.acceleration_z:f}\t{0.velocity_x:f}\t{0.velocity_y:f}\t{0.velocity_z:f}\t{0.angular_velocity_x:f}\t{0.angular_velocity_y:f}\t{0.angular_velocity_z:f}\t{0.yaw:f}\t{0.pitch:f}\t{0.roll:f}\t{0.norm_suspension_travel_FL:f}\t{0.norm_suspension_travel_FR:f}\t{0.norm_suspension_travel_RL:f}\t{0.norm_suspension_travel_RR:f}\t{0.tire_slip_ratio_FL:f}\t{0.tire_slip_ratio_FR:f}\t{0.tire_slip_ratio_RL:f}\t{0.tire_slip_ratio_RR:f}\t{0.wheel_rotation_speed_FL:f}\t{0.wheel_rotation_speed_FR:f}\t{0.wheel_rotation_speed_RL:f}\t{0.wheel_rotation_speed_RR:f}\t{0.wheel_on_rumble_strip_FL:f}\t{0.wheel_on_rumble_strip_FR:f}\t{0.wheel_on_rumble_strip_RL:f}\t{0.wheel_on_rumble_strip_RR:f}\t{0.wheel_in_puddle_FL:f}\t{0.wheel_in_puddle_FR:f}\t{0.wheel_in_puddle_RL:f}\t{0.wheel_in_puddle_RR:f}\t{0.surface_rumble_FL:f}\t{0.surface_rumble_FR:f}\t{0.surface_rumble_RL:f}\t{0.surface_rumble_RR:f}\t{0.tire_slip_angle_FL:f}\t{0.tire_slip_angle_FR:f}\t{0.tire_slip_angle_RL:f}\t{0.tire_slip_angle_RR:f}\t{0.tire_combined_slip_FL:f}\t{0.tire_combined_slip_FR:f}\t{0.tire_combined_slip_RL:f}\t{0.tire_combined_slip_RR:f}\t{0.suspension_travel_meters_FL:f}\t{0.suspension_travel_meters_FR:f}\t{0.suspension_travel_meters_RL:f}\t{0.suspension_travel_meters_RR:f}\t{0.car_ordinal}\t{0.car_class}\t{0.car_performance_index}\t{0.drivetrain_type}\t{0.num_cylinders}\t{0.position_x}\t{0.position_y}\t{0.position_z}\t{0.speed}\t{0.power}\t{0.torque}\t{0.tire_temp_FL}\t{0.tire_temp_FR}\t{0.tire_temp_RL}\t{0.tire_temp_RR}\t{0.boost}\t{0.fuel}\t{0.dist_traveled}\t{0.best_lap_time}\t{0.last_lap_time}\t{0.cur_lap_time}\t{0.cur_race_time}\t{0.lap_no}\t{0.race_pos}\t{0.accel}\t{0.brake}\t{0.clutch}\t{0.handbrake}\t{0.gear}\t{0.steer}\t{0.norm_driving_line}\t{0.norm_ai_brake_diff}'.format(self))
-
-#extends ForzaDataPacket to an array with optional filter on the props
-#TODO: implement all relevant array functions
-class ForzaDataPacketArray(ForzaDataPacket):
-    def __init__(self, set_props = [], packet_format='fh4'):
-        self.packet_format = packet_format
-        
-        self.props = set_props if set_props else ForzaDataPacket.get_props(packet_format)
-        for prop in self.props:
-            setattr(self, prop, [])
-    
-    def append(self, fdp):
-        for prop, value in zip(self.props, fdp.to_list(self.props)):
-            getattr(self, prop).append(value)
-
-    def to_list(self, attributes=None):
-        if attributes:
-            return([getattr(self, a) for a in attributes])
-        
-        return([getattr(self, a) for a in self.props])
-
-    def get_props(self):
-        return self.props
-
-    def get_tsv_header(self):
-        return '\t'.join(self.props)
-
-    #TODO: implement
-    def to_tsv(self):
-        pass
-    
-    def clear(self):
-        for prop in self.props:
-            getattr(self, prop).clear()
-
-#extends ForzaDataPacket to a deque with optional filter on the props
-#TODO: implement all relevant deque functions
-from collections import deque        
-class ForzaDataPacketDeque(ForzaDataPacketArray):
-    def __init__(self, maxlen = None, set_props = [], packet_format='fh4'):
-        self.packet_format = packet_format
-        
-        self.props = set_props if set_props else ForzaDataPacket.get_props(packet_format)
-        for prop in self.props:
-            setattr(self, prop, deque(maxlen=maxlen))
     
