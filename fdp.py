@@ -142,6 +142,12 @@ class ForzaDataPacket:
                                              unpack(self.dash_format,
                                                     patched_data)):
                 setattr(self, prop_name, prop_value)
+        elif packet_format == 'fm8':
+            patched_data = data[:311]
+            for prop_name, prop_value in zip(self.sled_props + self.dash_props,
+                                             unpack(self.dash_format,
+                                                    patched_data)):
+                setattr(self, prop_name, prop_value)
         else:
             for prop_name, prop_value in zip(self.sled_props + self.dash_props,
                                              unpack(self.dash_format, data)):
