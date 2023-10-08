@@ -79,7 +79,7 @@ class Gear():
     DEQUE_MIN, DEQUE_LEN  = 40, 60
 
     #              FWD    RWD    AWD (awd lower due to center diff variance)
-    VAR_BOUNDS = [1e-08, 1e-08, 1e-04]
+    VAR_BOUNDS = [1e-04, 1e-04, 1e-04]
 
     def __init__(self, number):
         self.gear = number
