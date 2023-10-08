@@ -10,9 +10,9 @@ from os.path import exists
 FILENAME_SETTINGS = 'config.json'
 
 class config():
-    ip = '127.0.0.1' #TODO: test if leaving this empty works better
+    ip = ''
     port = 12350
-    packet_format = 'fh4'
+    # packet_format = 'phased_out'
     
     sound_file = 'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
     sound_files = {  0:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
