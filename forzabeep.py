@@ -43,7 +43,7 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
 #splitting these two has resulted in the window not responding for several
 #seconds after launching, despite the back-end still updating
 class ForzaBeep():
-    TITLE = "ForzaShiftTone: Dynamic shift tone for Forza Horizon 5"
+    TITLE = "ForzaShiftTone: Dynamic shift tone for the Forza series"
     WIDTH, HEIGHT = 745, 255
 
     MAXGEARS = 10
@@ -56,7 +56,7 @@ class ForzaBeep():
 
     def __init__(self):
         self.loop = ForzaUDPLoop(ip=config.ip, port=config.port, 
-                                 packet_format=config.packet_format,
+                                 packet_format=None,
                                  loop_func=self.loop_func)
         self.__init__tkinter()
         self.__init__vars()
@@ -104,6 +104,8 @@ class ForzaBeep():
 
         self.car_ordinal = None
         self.car_performance_index = None
+        
+        self.first_packet = False
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Variables')
@@ -349,6 +351,10 @@ class ForzaBeep():
             print(f'guess revlimit: {self.get_revlimit()}')
 
     def loop_func(self, fdp):
+        if not self.first_packet:
+            print(f"Format: {fdp.packet_format}")
+            self.first_packet = True
+        
         if not fdp.is_race_on:
             return
 
