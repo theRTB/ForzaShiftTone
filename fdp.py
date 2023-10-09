@@ -139,7 +139,6 @@ class ForzaDataPacket:
         if packet_format is None:
             packet_format = self.lookup_format.get(len(data), 'dash')
         self.packet_format = packet_format
-        print(f'len {len(data)} format {packet_format}')
 
         ## zip makes for convenient flexibility when mapping names to
         ## values in the data packet:
