@@ -76,17 +76,22 @@ class ForzaDataPacket:
     ## Format string for the V2 format called 'car dash'
     dash_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb'
     
-    ## Format string for the FH4+ format
+    ## Format string for the FH4 (to be determined) format
+    ## Format string for the FH5 format, final byte is unknown
     ## first int related to car category, two? ints related to hitting objects
     fh4_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiiiiifffffffffffffffffHBBBBBBbbb'
+    fh5_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiiiiifffffffffffffffffHBBBBBBbbbb'
 
     ## Format string for the FM8 format
     ## 20 bytes after the regular dash structure, unknown data
     fm8_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb5i'
 
     #create lookup table for packet structure detection by packet size
-    lookup_format = { calcsize(f):f for f in [sled_format, dash_format, 
-                                              fh4_format, fm8_format] }
+    lookup_format = { calcsize(s):f for s,f in [(sled_format, 'sled'), 
+                                                (dash_format, 'dash'), 
+                                                (fh4_format, 'fh4'), 
+                                                (fh5_format, 'fh5'), 
+                                                (fm8_format, 'fm8')] }
 
     ## Names of the properties in the order they're featured in the packet:
     sled_props = [
@@ -144,7 +149,7 @@ class ForzaDataPacket:
             for prop_name, prop_value in zip(self.sled_props,
                                              unpack(self.sled_format, data)):
                 setattr(self, prop_name, prop_value)
-        elif packet_format == 'fh4':
+        elif packet_format == 'fh4' or packet_format == 'fh5':
             patched_data = data[:232] + data[244:323]
             for prop_name, prop_value in zip(self.sled_props + self.dash_props,
                                              unpack(self.dash_format,
