@@ -85,8 +85,10 @@ class ForzaDataPacket:
     fm8_format = '<iIfffffffffffffffffffffffffffffffffffffffffffffffffffiiiiifffffffffffffffffHBBBBBBbbb5i'
 
     #create lookup table for packet structure detection by packet size
-    lookup_format = { calcsize(f):f for f in [sled_format, dash_format, 
-                                              fh4_format, fm8_format] }
+    lookup_format = { calcsize(s):f for s,f in [(sled_format, 'sled'), 
+                                                (dash_format, 'dash'), 
+                                                (fh4_format, 'fh4'), 
+                                                (fm8_format, 'fm8')] }
 
     ## Names of the properties in the order they're featured in the packet:
     sled_props = [
@@ -137,6 +139,7 @@ class ForzaDataPacket:
         if packet_format is None:
             packet_format = self.lookup_format.get(len(data), 'dash')
         self.packet_format = packet_format
+        print(f'len {len(data)} format {packet_format}')
 
         ## zip makes for convenient flexibility when mapping names to
         ## values in the data packet:
