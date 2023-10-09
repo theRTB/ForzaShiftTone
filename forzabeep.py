@@ -139,7 +139,7 @@ class ForzaBeep():
                                                   sticky=tkinter.W)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
-        resetbutton.grid(row=row, column=3, rowspan=2)
+        resetbutton.grid(row=row, column=3, rowspan=1)
         resetbutton.bind('<Button-1>', self.reset)
 
         self.__init__window_buffers_frame(row)
@@ -151,9 +151,18 @@ class ForzaBeep():
                              sticky=tkinter.E)
 
         row += 1 #continue on next row
+        
+        self.peakpower = tkinter.StringVar(value='')
+        tkinter.Label(self.root, text='Power').grid(row=row, column=0,
+                                                       sticky=tkinter.E)        
+        peak = tkinter.Entry(self.root, textvariable=self.peakpower, 
+                             width=25, state='readonly')
+        peak.grid(row=row, column=1, sticky=tkinter.W, columnspan=4)
 
         tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
                                                      columnspan=2)
+
+        self.set_peak_power()
 
         row += 1 #continue on next row
 
@@ -174,6 +183,14 @@ class ForzaBeep():
                             variable=self.active, command=self.active_handler
                             ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
+
+    def set_peak_power(self):
+        if self.curve is None:
+            return
+        index = self.curve.get_peakpower_index()
+        power = self.curve.power[index]
+        rpm = self.curve.rpm[index]
+        self.peakpower.set(f'{power:>4} kW peak @ {rpm:>5} rpm')
 
     def active_handler(self):
         self.loop.loop_toggle(self.active.get())
@@ -204,6 +221,7 @@ class ForzaBeep():
         self.update_rpm = True
         self.revlimit = -1
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
+        self.peakpower.set('')
 
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
@@ -271,6 +289,7 @@ class ForzaBeep():
         if self.curve is None or newrun_better:
             self.curve = Curve(self.runcollector.get_run())
             self.set_revlimit(self.curve.get_revlimit())
+            self.set_peak_power()
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
         if newrun_better: #force recalculation of rpm if possible
