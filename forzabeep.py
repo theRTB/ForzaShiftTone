@@ -139,7 +139,7 @@ class ForzaBeep():
                                                   sticky=tkinter.W)
 
         resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
-        resetbutton.grid(row=row, column=3, rowspan=1)
+        resetbutton.grid(row=row, column=3)
         resetbutton.bind('<Button-1>', self.reset)
 
         self.__init__window_buffers_frame(row)
@@ -189,8 +189,10 @@ class ForzaBeep():
             return
         index = self.curve.get_peakpower_index()
         power = self.curve.power[index]
+        power = int(round(power/1000, 0)) #W -> kW, round to whole
         rpm = self.curve.rpm[index]
-        self.peakpower.set(f'{power:>4} kW peak @ {rpm:>5} rpm')
+        rpm = int(round(rpm/25, 0)*25) #round to nearest 25
+        self.peakpower.set(f'{power:>4} kW peak @ ±{rpm:>5} rpm')
 
     def active_handler(self):
         self.loop.loop_toggle(self.active.get())
