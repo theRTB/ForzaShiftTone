@@ -26,7 +26,7 @@ If you are unsure which file to pick, download the  **ForzaShiftTone.v0.65.zip**
 The **ForzaShiftTone.v0.65_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
 
 Changes:  
-- *Revlimit guess disabled: program will _not_ beep until gears plus power curve have been collected.*
+- **Revlimit guess disabled: program will _not_ beep until gears plus power curve have been collected.**
 - Power curve locks if it's three or more seconds long
 - Hysteris defaults to percentage of engine_max_rpm
 - Updated debug target shift rpm to be dynamic (Only for _debug build)
