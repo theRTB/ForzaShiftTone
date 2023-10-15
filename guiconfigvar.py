@@ -50,6 +50,12 @@ class DynamicToneOffset():
     def finish_counter(self):
         if self.counter is None:
             return
+        
+        if self.counter < 0:
+            print(f'DynamicToneOffset: erronous {packets_to_ms(self.counter)} ms, discarded')
+            self.reset_counter()
+            return
+            
         if self.counter > self.OFFSET_OUTLIER:
             print(f'DynamicToneOffset: outlier {packets_to_ms(self.counter)} ms, discarded')
             self.reset_counter()
