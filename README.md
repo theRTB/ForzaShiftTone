@@ -1,6 +1,6 @@
 # ForzaShiftTone
 
-**Windows GUI application to provide a shift tone in Forza Motorsport or Forza Horizon 4/5.**
+**Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
 ![example v0.7-beta BMW M5 2018](images/sample-BMW-M5-2018-11.png)
 
