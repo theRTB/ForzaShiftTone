@@ -153,10 +153,11 @@ class ForzaBeep():
         row += 1 #continue on next row
         
         self.peakpower = tkinter.StringVar(value='')
-        tkinter.Label(self.root, text='Power').grid(row=row, column=0,
-                                                       sticky=tkinter.E)        
+        tkinter.Label(self.root, text='Peak\npower').grid(row=row, column=0,
+                                                         columnspan=1, 
+                                                         sticky=tkinter.E)        
         peak = tkinter.Entry(self.root, textvariable=self.peakpower, 
-                             width=25, state='readonly')
+                             width=22, state='readonly')
         peak.grid(row=row, column=1, sticky=tkinter.W, columnspan=4)
 
         tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
@@ -191,8 +192,8 @@ class ForzaBeep():
         power = self.curve.power[index]
         power = int(round(power/1000, 0)) #W -> kW, round to whole
         rpm = self.curve.rpm[index]
-        rpm = int(round(rpm/25, 0)*25) #round to nearest 25
-        self.peakpower.set(f'{power:>4} kW peak @ ±{rpm:>5} rpm')
+        rpm = int(round(rpm/50, 0)*50) #round to nearest 50
+        self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} rpm')
 
     def active_handler(self):
         self.loop.loop_toggle(self.active.get())
