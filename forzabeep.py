@@ -364,7 +364,7 @@ class ForzaBeep():
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
 
-    def loop_beep(self, fdp, rpm):
+    def loop_beep(self, fdp):
         rpm = fdp.current_engine_rpm
         beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
         if self.beep_counter <= 0:
