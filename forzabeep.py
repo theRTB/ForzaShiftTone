@@ -239,12 +239,6 @@ class ForzaBeep():
         self.revlimit = int(val)
         self.revlimit_var.set(self.revlimit)
 
-    def loop_hysteresis(self, fdp):
-        rpm = fdp.current_engine_rpm
-        hysteresis = self.hysteresis_percent.as_rpm(fdp)
-        if abs(rpm - self.rpm_hysteresis) >= hysteresis:
-            self.rpm_hysteresis = rpm
-
     #reset if the car_ordinal or the PI changes
     def loop_test_car_changed(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
@@ -264,7 +258,20 @@ class ForzaBeep():
             self.car_performance_index = fdp.car_performance_index
             print(f"PI changed {fdp.car_performance_index}: resetting!")
             print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
-            
+
+    def loop_guess_revlimit(self, fdp):
+        if self.get_revlimit() == -1 and config.revlimit_guess != -1:
+            self.set_revlimit(fdp.engine_max_rpm - config.revlimit_guess)
+            self.revlimit_entry.configure(
+                                    readonlybackground=self.REVLIMIT_BG_GUESS)
+            print(f'guess revlimit: {self.get_revlimit()}')    
+
+    def loop_hysteresis(self, fdp):
+        rpm = fdp.current_engine_rpm
+        hysteresis = self.hysteresis_percent.as_rpm(fdp)
+        if abs(rpm - self.rpm_hysteresis) >= hysteresis:
+            self.rpm_hysteresis = rpm
+
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
     #test if this leads to a more accurate run with a better rev limit defined
@@ -365,12 +372,6 @@ class ForzaBeep():
         elif (self.beep_counter > 0 and (rpm < beep_rpm or beep_rpm == -1)):
             self.beep_counter -= 1
 
-    def loop_guess_revlimit(self, fdp):
-        if self.get_revlimit() == -1 and config.revlimit_guess != -1:
-            self.set_revlimit(fdp.engine_max_rpm - config.revlimit_guess)
-            self.revlimit_entry.configure(
-                                    readonlybackground=self.REVLIMIT_BG_GUESS)
-            print(f'guess revlimit: {self.get_revlimit()}')
 
     def loop_func(self, fdp):
         if self.display_packet_format:
