@@ -239,6 +239,11 @@ class ForzaBeep():
         self.revlimit = int(val)
         self.revlimit_var.set(self.revlimit)
 
+    def loop_update_rpm(self, fdp):
+        if self.update_rpm:
+            self.rpm.set(int(fdp.current_engine_rpm))
+        self.update_rpm = not self.update_rpm #halve RPM update frequency        
+
     #reset if the car_ordinal or the PI changes
     def loop_test_car_changed(self, fdp):
         if self.car_ordinal is None and fdp.car_ordinal != 0:
@@ -360,6 +365,7 @@ class ForzaBeep():
         self.tone_offset.reset_counter()
 
     def loop_beep(self, fdp, rpm):
+        rpm = fdp.current_engine_rpm
         beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
         if self.beep_counter <= 0:
             if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
@@ -372,6 +378,10 @@ class ForzaBeep():
         elif (self.beep_counter > 0 and (rpm < beep_rpm or beep_rpm == -1)):
             self.beep_counter -= 1
 
+    def debug_log_full_shiftdata(self, fdp):
+        if self.we_beeped > 0 and config.log_full_shiftdata:
+            print(f'rpm {fdp.current_engine_rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {config.we_beep_max-self.we_beeped+1}')
+            self.we_beeped -= 1
 
     def loop_func(self, fdp):
         if self.display_packet_format:
@@ -385,11 +395,7 @@ class ForzaBeep():
         if gear < 1 or gear > MAXGEARS:
             return
 
-        rpm = fdp.current_engine_rpm
-        if self.update_rpm:
-            self.rpm.set(int(rpm))
-        self.update_rpm = not self.update_rpm #halve RPM update frequency
-
+        self.loop_update_rpm(fdp)
         self.loop_test_car_changed(fdp) #reset if car ordinal/PI changes
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
         self.loop_hysteresis(fdp) #update self.rpm_hysteresis
@@ -398,11 +404,9 @@ class ForzaBeep():
         self.gears.update_of(gear, fdp) #update gear ratio and state of gear
         self.loop_calculate_shiftrpms() #derive shift
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
-        self.loop_beep(fdp, rpm) #test if we need to beep
+        self.loop_beep(fdp) #test if we need to beep
 
-        if self.we_beeped > 0 and config.log_full_shiftdata:
-            print(f'rpm {rpm:.0f} torque {fdp.torque:.1f} slope {self.lookahead.slope:.2f} intercept {self.lookahead.intercept:.2f} count {config.we_beep_max-self.we_beeped+1}')
-            self.we_beeped -= 1
+        self.debug_log_full_shiftdata(fdp)
 
     #to account for torque not being flat, we take a linear approach
     #we take the ratio of the current torque and the torque at the shift rpm
