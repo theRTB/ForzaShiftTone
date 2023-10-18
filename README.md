@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
-![example v0.7-beta BMW M5 2018](images/sample-BMW-M5-2018-11.png)
+![example v0.75-beta BMW M5 2018](images/sample-BMW-M5-2018-12.png)
 
 ## TL;DR
 
@@ -24,11 +24,11 @@ To enable remote telemetry in Forza Horizon 5 on Steam for this application:
 
 ## Current release
 
-If you are unsure which file to pick, download the  **ForzaShiftTone.v0.7-beta.zip** file. 
-The **ForzaShiftTone.v0.7-beta_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
+If you are unsure which file to pick, download the  **ForzaShiftTone.v0.75.zip** file. 
+The **ForzaShiftTone.v0.75_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
 
 Changes:  
-- **Revlimit guess disabled: program will _not_ beep until gears plus power curve have been collected.**
+- **Revlimit guess disabled by default: program will _not_ beep until gear ratios plus power curve have been collected.**
 - Added Forza Motorsport support
 - Added display of peak Power with associated rpm value
 - Power curve locks if it's three or more seconds long
