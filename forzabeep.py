@@ -15,8 +15,7 @@ from mttkinter import mtTkinter as tkinter
 import math
 from collections import deque
 
-#tell Windows we are DPI aware. We aren't really, but this gets around
-#tkinter scaling inconsistently.
+#tell Windows we are DPI aware
 import ctypes
 PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
@@ -45,14 +44,12 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
 class ForzaBeep():
     TITLE = "ForzaShiftTone: Dynamic shift tone for the Forza series"
     WIDTH, HEIGHT = 745, 255
-
-    MAXGEARS = 10
     
     DEFAULT_GUI_VALUE = 'N/A'
 
     REVLIMIT_BG_NA = '#F0F0F0'
-    REVLIMIT_BG_GUESS = '#ffffff'
-    REVLIMIT_BG_CURVE = '#ccddcc'
+    REVLIMIT_BG_GUESS = '#FFFFFF'
+    REVLIMIT_BG_CURVE = '#CCDDCC'
 
     def __init__(self):
         self.loop = ForzaUDPLoop(ip=config.ip, port=config.port, 
@@ -260,12 +257,12 @@ class ForzaBeep():
             self.reset()
             self.car_ordinal = fdp.car_ordinal
             self.car_performance_index = fdp.car_performance_index
-            print(f"Ordinal changed to {self.car_ordinal}, PI {fdp.car_performance_index} resetting!")
+            print(f"Ordinal changed to {self.car_ordinal}, PI {fdp.car_performance_index}: resetting!")
             print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
         elif self.car_performance_index != fdp.car_performance_index:
             self.reset()
             self.car_performance_index = fdp.car_performance_index
-            print(f"PI changed {fdp.car_performance_index} resetting!")
+            print(f"PI changed {fdp.car_performance_index}: resetting!")
             print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
             
     #grab curve if we collected a complete run
@@ -306,6 +303,15 @@ class ForzaBeep():
             return
         self.gears.calculate_shiftrpms(self.curve.rpm, self.curve.power)
 
+    def debug_log_basic_shiftdata(self, shiftrpm, gear, beep_distance):
+        target = self.debug_target_rpm
+        difference = 'N/A' if target == -1 else f'{shiftrpm - target:4.0f}'
+        beep_distance_ms = 'N/A'
+        if beep_distance is not None:
+            beep_distance_ms = packets_to_ms(beep_distance)
+        print(f"gear {gear-1}-{gear}: {shiftrpm:.0f} actual shiftrpm, {target:.0f} target, {difference} difference, {beep_distance_ms} ms distance to beep")
+        print("-"*50)
+
     #we assume power is negative between gear change and first frame of shift
     #accel has to be positive at all times, otherwise we don't know for sure
     #where the shift starts
@@ -313,38 +319,34 @@ class ForzaBeep():
     #if so, we run backwards until the packet where power is negative and
     #the previous packet's power is positive: the actual point of shifting
     def loop_test_for_shiftrpm(self, fdp):
+        #case gear is the same in new fdp or we start from zero
         if (len(self.shiftdelay_deque) == 0 or 
             self.shiftdelay_deque[0].gear == fdp.gear):
             self.shiftdelay_deque.appendleft(fdp)
             self.tone_offset.increment_counter()
             return
-        if self.shiftdelay_deque[0].gear > fdp.gear: #reset on downshift
+        #case gear has gone down: reset
+        if self.shiftdelay_deque[0].gear > fdp.gear:
             self.shiftdelay_deque.clear()
             self.tone_offset.reset_counter()
             self.debug_target_rpm = -1 #reset target rpm
             return
-            
         #case gear has gone up
         prev_packet = fdp
         shiftrpm = None
         for packet in self.shiftdelay_deque:
             if packet.accel == 0:
-                return
+                break
             if prev_packet.power < 0 and packet.power >= 0:
                 shiftrpm = packet.current_engine_rpm
                 break
             prev_packet = packet
             self.tone_offset.decrement_counter()
         if shiftrpm is not None:
-            target = self.debug_target_rpm
-            beep_distance = self.tone_offset.get_counter()
+            counter = self.tone_offset.get_counter()
             self.tone_offset.finish_counter() #update dynamic offset logic
-            beep_distance_ms = 'N/A'
-            if beep_distance is not None:
-                beep_distance_ms = packets_to_ms(beep_distance)
             if config.log_basic_shiftdata:
-                print(f"gear {fdp.gear-1}-{fdp.gear}: {shiftrpm:.0f} actual shiftrpm, {target:.0f} target, {shiftrpm - target:4.0f} difference, {beep_distance_ms} ms distance to beep")
-                print("-"*50)
+                self.debug_log_basic_shiftdata(shiftrpm, fdp.gear, counter)
         self.we_beeped = 0
         self.debug_target_rpm = -1
         self.shiftdelay_deque.clear()
