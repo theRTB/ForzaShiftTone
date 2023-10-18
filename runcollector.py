@@ -11,8 +11,8 @@ from config import config
 #if the user lets go of throttle, changes gear: reset
 #revlimit is confirmed by: the initial run, then x packets with negative power,
 #   then a packet with positive power. All at 100% throttle
-#Then cut down the array to force boost to be at or above the boost in the
-#   final packet
+#Then cut down the array to force boost to be at or above the boost multiplied
+#   by the percentage in config with a small fudge factor of 0.001
 #if power at the first packet is lower (or equal) to the power in the final
 #   packet, we have a power curve that is complete enough to do shift rpm
 #   rpm calculations with it.

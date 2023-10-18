@@ -68,9 +68,9 @@ class ForzaBeep():
         self.root.title(self.TITLE)
         
         #100% scaling is 96 dpi in Windows, tkinter assumes 72 dpi
-        #we have to fudge width a bit if scaling is 100%
         #window_scalar allows the user to scale the window up or down
         #the UI was designed at 150% scaling or 144 dpi
+        #we have to fudge width a bit if scaling is 100%
         screen_dpi = self.root.winfo_fpixels('1i')
         dpi_factor = (96/72) * (screen_dpi / 96) * config.window_scalar
         size_factor = screen_dpi / 144 * config.window_scalar
@@ -82,30 +82,28 @@ class ForzaBeep():
         self.root.geometry(f"{width}x{height}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.resizable(False, False)
-        self.root.tk.call('tk', 'scaling', dpi_factor) #Spyder console fix for DPI too low
+        self.root.tk.call('tk', 'scaling', dpi_factor)
 
     def __init__vars(self):
         self.we_beeped = 0
         self.beep_counter = 0
         self.debug_target_rpm = -1
+        self.revlimit = -1
+        self.rpm_hysteresis = 0
+        
         self.curve = None
 
         self.gears = GUIGears()
-
-        self.revlimit = -1
-
         self.runcollector = RunCollector()
         self.lookahead = Lookahead(config.linreg_len_min,
                                    config.linreg_len_max)
 
         self.shiftdelay_deque = deque(maxlen=120)
 
-        self.rpm_hysteresis = 0
-
         self.car_ordinal = None
         self.car_performance_index = None
         
-        self.first_packet = False
+        self.display_packet_format = True
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Variables')
@@ -193,7 +191,7 @@ class ForzaBeep():
         power = int(round(power/1000, 0)) #W -> kW, round to whole
         rpm = self.curve.rpm[index]
         rpm = int(round(rpm/50, 0)*50) #round to nearest 50
-        self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} rpm')
+        self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} RPM')
 
     def active_handler(self):
         self.loop.loop_toggle(self.active.get())
@@ -373,9 +371,9 @@ class ForzaBeep():
             print(f'guess revlimit: {self.get_revlimit()}')
 
     def loop_func(self, fdp):
-        if not self.first_packet:
+        if self.display_packet_format:
             print(f"Format: {fdp.packet_format}")
-            self.first_packet = True
+            self.display_packet_format = False
         
         if not fdp.is_race_on:
             return
