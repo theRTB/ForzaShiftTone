@@ -55,7 +55,7 @@ While it is intended to run in the background without consideration while drivin
 ### Browser/Windows warnings
 
 The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will remain unsigned as it is not worthwhile.  
-Windows Defender Firewall may also pop up. The program has no ability to send packets, unsure why the firewall still asks for permission. You do not have to allow access if the game runs on the same device.
+Windows Defender Firewall may also pop up. The program has no ability to send packets, unsure why the firewall still asks for permission. Untested whether blocking still allows ForzaShiftTone to function.
 
 ## Implementation
 
