@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
-![example v0.75-beta BMW M5 2018](images/sample-BMW-M5-2018-12.png)
+![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13.png)
 
 ## TL;DR
 
@@ -15,7 +15,7 @@
 
 ### Enable remote telemetry / Data out in Forza Motorsport
 
-To enable remote telemetry in Forza Horizon 5 on Steam for this application: 
+To enable remote telemetry in Forza Motorsport 8 on Steam for this application: 
 - Head to Settings -> Gameplay & HUD -> scroll down to the bottom
 - Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game.
 - The Data Out Packet Format should be set to 'Car Dash'
@@ -24,20 +24,11 @@ To enable remote telemetry in Forza Horizon 5 on Steam for this application:
 
 ## Current release
 
-If you are unsure which file to pick, download the  **ForzaShiftTone.v0.75.zip** file. 
-The **ForzaShiftTone.v0.75_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
+If you are unsure which file to pick, download the  **ForzaShiftTone.v0.76.zip** file. 
+The **ForzaShiftTone.v0.76_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
 
 Changes:  
-- **Revlimit guess disabled by default: program will _not_ beep until gear ratios plus power curve have been collected.**
-- Added Forza Motorsport support
-- Added display of peak Power with associated rpm value
-- Power curve locks if it's three or more seconds long
-- Hysteris defaults to percentage of engine_max_rpm
-- Updated debug target shift rpm to be dynamic (Only for _debug build)
-- PI changes now cause a reset
-- Respected rev limit at 98.5% by default
-- Additional tone offset to 100ms from 83ms for revlimit time distance trigger
-- Hysteresis defaults to 0.5% of engine_max_rpm
+- Added button to display the power graph
 
 ## Considerations
 
@@ -54,7 +45,7 @@ While it is intended to run in the background without consideration while drivin
 
 ### Browser/Windows warnings
 
-The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will remain unsigned as it is not worthwhile.  
+The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will remain unsigned as the yearly cost of a signing certificate is considerable.
 Windows Defender Firewall may also pop up. The program has no ability to send packets, unsure why the firewall still asks for permission. Untested whether blocking still allows ForzaShiftTone to function.
 
 ## Implementation
@@ -98,8 +89,8 @@ There is one packet per 16.667 milliseconds, approximately.
 - Active tickbox: If unticked, application will not track incoming packets and therefore not beep or update.
 - Edit tickbox: If unticked, the up and down arrows for the Tone offset, Revlimit ms/% and Hysteresis values do not function. This is to avoid accidental clicks.
 - Reset button: If pressed, reset revlimit and all values for all gears. Configuration values are unchanged. If the UI is unresponsive, restart the application.
+- View graphs button: If enabled and pressed, displays a power graph in a separate window. 
 
 ## Known issues
-- The tone offset will not update: Slowing down and shifting up/down to first seems to work best
 - The python variant will on rare occasions crash: seems to be mttkinter related and is unlikely to be fixed
 - The power curve is not filtered. Noisy data can cause target shift rpm that are incorrect.
