@@ -31,6 +31,7 @@ from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
 from utility import beep, multi_beep, packets_to_ms
+from buttongraph import ButtonGraph
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
                           GUIConfigVariable_ToneOffset,
@@ -137,13 +138,18 @@ class ForzaBeep():
         resetbutton.grid(row=row, column=3)
         resetbutton.bind('<Button-1>', self.reset)
 
+        self.buttongraph = ButtonGraph(self.root, self.graphbutton_handler,
+                                       config)
+        self.buttongraph.grid(row=row, column=9, rowspan=2, columnspan=2,
+                              sticky=tkinter.NW)
+
         self.__init__window_buffers_frame(row)
 
         self.volume = tkinter.IntVar(value=config.volume)
         tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
                       from_=0, to=-30, variable=self.volume, resolution=10
                       ).grid(row=row, column=10, columnspan=1, rowspan=3,
-                             sticky=tkinter.E)
+                             sticky=tkinter.SE)
 
         row += 1 #continue on next row
         
@@ -154,12 +160,8 @@ class ForzaBeep():
         peak = tkinter.Entry(self.root, textvariable=self.peakpower, 
                              width=22, state='readonly')
         peak.grid(row=row, column=1, sticky=tkinter.W, columnspan=4)
-
-        tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
-                                                     columnspan=2)
-
         self.set_peak_power()
-
+        
         row += 1 #continue on next row
 
         self.update_rpm = True
@@ -179,6 +181,14 @@ class ForzaBeep():
                             variable=self.active, command=self.active_handler
                             ).grid(row=row, column=3, columnspan=2,
                                    sticky=tkinter.W)
+
+        tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
+                                                     columnspan=2)
+
+    def graphbutton_handler(self, event=None):
+        if self.buttongraph.is_disabled():
+            return
+        self.buttongraph.create_graphwindow(self.curve)
 
     def set_peak_power(self):
         if self.curve is None:
@@ -220,6 +230,7 @@ class ForzaBeep():
         self.revlimit = -1
         self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
         self.peakpower.set('')
+        self.buttongraph.reset()
 
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
@@ -300,6 +311,7 @@ class ForzaBeep():
             self.curve = Curve(self.runcollector.get_run())
             self.set_revlimit(self.curve.get_revlimit())
             self.set_peak_power()
+            self.buttongraph.enable()
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
         if newrun_better: #force recalculation of rpm if possible
