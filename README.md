@@ -28,7 +28,8 @@ If you are unsure which file to pick, download the  **ForzaShiftTone.v0.76.zip**
 The **ForzaShiftTone.v0.76_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
 
 Changes:  
-- Added button to display the power graph
+- Added button to display the power graph:
+![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13-2.png)
 
 ## Considerations
 
