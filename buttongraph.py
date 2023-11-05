@@ -81,7 +81,7 @@ class ButtonGraph():
         self.window_open = True
 
         self.window = tkinter.Toplevel(self.root)
-        self.window.title()
+        self.window.title(self.TITLE)
         self.window.protocol('WM_DELETE_WINDOW', self.close)
 
         width, height = self.get_scaledwidthheight(self.WIDTH, self.HEIGHT)
