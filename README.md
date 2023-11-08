@@ -44,10 +44,11 @@ While it is intended to run in the background without consideration while drivin
   - Boost is taken into account. Some cars with very high boost may require a run at relatively low rpm in a relatively high gear to ensure enough data points at peak boost
   - Flat tarmac is preferable.
 
-### Browser/Windows warnings
+### Windows executable
 
-The current release is a Pyinstaller package that is not signed. This means various browsers and Smartscreen inside Windows are going to complain the file is unsafe or an uncommon download. Future releases will remain unsigned as the yearly cost of a signing certificate is considerable.
-Windows Defender Firewall may also pop up. The program has no ability to send packets, unsure why the firewall still asks for permission. Untested whether blocking still allows ForzaShiftTone to function.
+There is no viable way to compile a Python script into an executable.  
+Pyinstaller exists, but the result will be considered a virus. It will also lack a certificate leading to Chrome/Edge/SmartScreen blocking the executable. The yearly cost of an EV signing certificate is not worth it.
+A self-contained Python distribution is not viable to create for Windows if it has to include tkinter and matplotlib.
 
 ## Implementation
 
