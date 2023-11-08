@@ -6,19 +6,19 @@
 
 ## TL;DR
 
-- Drive around on tarmac per gear until you hear a double beep
+- Per gear: Drive around on flat tarmac until you hear a double beep
   - Maintain fixed speed if it has trouble locking the gear ratio
-- On flat tarmac: Apply full throttle from low rpm until you hear a triple beep
+- On a flat straight: Apply full throttle starting from low rpm until you hear a triple beep
   - Use a gear with low/no wheelspin
   - Try again if you hit the rev limiter with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
-### Enable remote telemetry / Data out in Forza Motorsport
+### Enable remote telemetry / Data out in Forza Motorsport / Forza Horizon 4/5
 
 To enable remote telemetry in Forza Motorsport 8 on Steam for this application: 
-- Head to Settings -> Gameplay & HUD -> scroll down to the bottom
-- Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game.
-- The Data Out Packet Format should be set to 'Car Dash'
+- Head to **Settings** -> **Gameplay & HUD** -> scroll down to the bottom (**HUD and Gameplay** in Forza Horizon 5)
+- Set **Data Out** to _On_, enter _127.0.0.1_ as **Data out IP address** and **Data out IP port** _12350_. You may have to restart the game.
+- The **Data Out Packet Format** should be set to '_Car Dash_' for Forza Motorsport
 - The Microsoft Store version may require a 3rd party Loopback Utility
 - It is unknown whether the Data Out functions on the consoles at all
 
@@ -42,12 +42,6 @@ While it is intended to run in the background without consideration while drivin
   - Boost is taken into account. Some cars with very high boost may require a run at relatively low rpm in a relatively high gear to ensure enough data points at peak boost
   - Flat tarmac is preferable.
 
-### Windows executable
-
-There is no viable way to compile a Python script into an executable.  
-Pyinstaller exists, but the result will be considered a virus. It will also lack a certificate leading to Chrome/Edge/SmartScreen blocking the executable. The yearly cost of an EV signing certificate is not worth it.
-A self-contained Python distribution is not viable to create for Windows if it has to include tkinter and matplotlib.
-
 ## Implementation
 
 The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
@@ -59,13 +53,6 @@ There are three triggers:
 
 The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers.  
 If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
-
-### Enable remote telemetry / Data out in Forza Horizon 5
-To enable remote telemetry in Forza Horizon 5 on Steam for this application: 
-- Head to Settings -> HUD and Gameplay -> scroll down to the bottom
-- Set Data Out to On, enter 127.0.0.1 as Data out IP address and Data out IP port 12350. You may have to restart the game.
-  - XBox Data Out is to my knowledge broken, but would otherwise require the Data Out IP Address to be your laptop's IP address instead and the address modified in config.json. This is untested.
-  - For the Microsoft Store version, install the Loopback Utility found on the internet.
 
 ## Settings
 
@@ -92,5 +79,5 @@ There is one packet per 16.667 milliseconds, approximately.
 - View graphs button: If enabled and pressed, displays a power graph in a separate window. 
 
 ## Known issues
-- The python variant will on rare occasions crash: seems to be mttkinter related and is unlikely to be fixed
+- Application will on rare occasions crash: related to the UI library and cannot be fixed
 - The power curve is not filtered. Noisy data can cause target shift rpm that are incorrect.
