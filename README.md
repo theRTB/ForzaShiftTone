@@ -23,6 +23,8 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 - It is unknown whether the Data Out functions on the consoles at all
 
 ## Current release
+**ForzaShiftTone.vbs**: to launch the application (Preferred)  
+**ForzaShiftTone.bat**: to launch the application with an additional commandline window that shows debug information
 
 Changes:  
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
