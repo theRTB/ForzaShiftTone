@@ -25,7 +25,7 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 ## Current release
 
 Changes:  
-- Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine detection algorithms.
+- Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
 - Added button to display the power graph:
 ![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13-2.png)
 
