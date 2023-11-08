@@ -24,10 +24,8 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 
 ## Current release
 
-If you are unsure which file to pick, download the  **ForzaShiftTone.v0.76.zip** file. 
-The **ForzaShiftTone.v0.76_debug.zip** file will open a commandline prompt with extra debug information alongside the GUI.
-
 Changes:  
+- Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine detection algorithms.
 - Added button to display the power graph:
 ![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13-2.png)
 
