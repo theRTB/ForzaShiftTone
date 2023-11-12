@@ -9,6 +9,7 @@ from mttkinter import mtTkinter as tkinter
 #import tkinter
 #import tkinter.ttk
 import math
+import numpy as np
 
 # import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -74,9 +75,67 @@ class ButtonGraph():
 
         return (x, y)
 
+    def plot_power2(self, fig, curve):
+        ax = fig.subplots(1)
+        fig.set_size_inches(8, 8)
+        ax.plot(curve.rpm, curve.power/1000)
+        ax.grid()
+        
+        ax.set_title(self.title)  
+        ax.set_xlabel("rpm")
+        ax.set_ylabel("power (kW)")
+        
+        i = np.argmax(curve.power)
+        peak_power = curve.power[i]/1000
+        peak_power_rpm = int(round(curve.rpm[i]/50, 0)*50)
+        finalpower = curve.power[-1]/1000
+        finalrpm = int(round(curve.rpm[-1]/50, 0)*50)
+        
+        j = np.argmin(np.abs(curve.power[:-2] - finalpower*1000))
+        testrpm = curve.rpm[j]
+        
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        
+        # ax.hlines(finalpower, finalrpm*.95, finalrpm, linestyle='dotted')
+        # ax.vlines(finalrpm, ymin, ymax, linestyle='dotted')
+        # ax.annotate(int(finalrpm), (finalrpm, ymin))
+        
+        ax.hlines(finalpower, testrpm, finalrpm, linestyle='dotted')
+        ax.hlines(peak_power, peak_power_rpm*.95, finalrpm, linestyle='dotted')
+        ax.vlines(peak_power_rpm, ymax*.85, ymax, linestyle='dotted')
+        ax.vlines(testrpm, ymax*.85, ymax, linestyle='dotted')
+        
+        ax.annotate(round(finalpower,1), (finalrpm, finalpower))
+        ax.annotate(round(peak_power,1), (finalrpm, peak_power))
+        ax.annotate(int(peak_power_rpm), (peak_power_rpm, ymax*.85))        
+        ax.annotate(int(testrpm), (testrpm, ymax*.85))
+        
+        if self.minrpm is not None:
+            xmin = self.minrpm
+        else:
+            minrpm = min(curve.rpm)
+            xmin = minrpm - minrpm % 1000
+        
+        ax.set_xlim(xmin, finalrpm)
+        ax.set_ylim(ymin, ymax)
+        # ax.set_ylim(finalpower*0.9, ymax)
+        
+        xticks = ax.get_xticks()
+        xticks[-1] = finalrpm
+        ax.set_xticks(xticks)
+
+    def plot_power(self, fig, curve):
+        ax = fig.subplots(1)
+        ax.plot(curve.rpm, curve.power/1000)
+        ax.set_xlabel('rpm')
+        ax.set_ylabel('power (kW)')
+        ax.format_coord = lambda x,y: f'{x:>5.0f} rpm: {y:4.1f} kW'
+        ax.grid()
+        
     #is called by graphbutton_handler in gui if there is a curve
     def create_graphwindow(self, curve):
-        if self.window_open:# or curve is None:
+        if self.window_open or curve is None:
             return
         self.window_open = True
 
@@ -97,9 +156,3 @@ class ButtonGraph():
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH,
                                           expand=False)
 
-        ax = fig.subplots(1)
-        ax.plot(curve.rpm, curve.power/1000)
-        ax.set_xlabel('rpm')
-        ax.set_ylabel('power (kW)')
-        ax.format_coord = lambda x,y: f'{x:>5.0f} rpm: {y:4.1f} kW'
-        ax.grid()
