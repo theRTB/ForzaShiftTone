@@ -197,7 +197,7 @@ class ForzaBeep():
         power = self.curve.power[index]
         power = int(round(power/1000, 0)) #W -> kW, round to whole
         rpm = self.curve.rpm[index]
-        rpm = int(round(rpm/50, 0)*50) #round to nearest 50
+        rpm = int(round(rpm/100, 0)*100) #round to nearest 100
         self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} RPM')
 
     def active_handler(self):
