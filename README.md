@@ -10,7 +10,7 @@
   - Maintain fixed speed if it has trouble locking the gear ratio
 - On a flat straight: Apply full throttle starting from low rpm until you hear a triple beep
   - Use a gear with low/no wheelspin
-  - Try again if you hit the rev limiter with no triple beep
+  - Try again if you hit the rev limiter for a second or two with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
 ### Enable remote telemetry / Data out in Forza Motorsport / Forza Horizon 4/5
@@ -82,4 +82,6 @@ There is one packet per 16.667 milliseconds, approximately.
 
 ## Known issues
 - Application will on rare occasions crash: related to the UI library and cannot be fixed
+- The application assumes at least one frame of negative power as the first frame of shifting
+  - Some cars shift so fast that power never goes negative: dynamic shift tone will not function properly
 - The power curve is not filtered. Noisy data can cause target shift rpm that are incorrect.
