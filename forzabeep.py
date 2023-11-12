@@ -257,23 +257,16 @@ class ForzaBeep():
 
     #reset if the car_ordinal or the PI changes
     def loop_test_car_changed(self, fdp):
-        if self.car_ordinal is None and fdp.car_ordinal != 0:
-            self.car_ordinal = fdp.car_ordinal
-            self.car_performance_index = fdp.car_performance_index
-            print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
-        elif fdp.car_ordinal == 0:
+        if fdp.car_ordinal == 0:
             return
-        elif self.car_ordinal != fdp.car_ordinal:
+        if (self.car_ordinal != fdp.car_ordinal or
+            self.car_performance_index != fdp.car_performance_index):
             self.reset()
             self.car_ordinal = fdp.car_ordinal
             self.car_performance_index = fdp.car_performance_index
-            print(f"Ordinal changed to {self.car_ordinal}, PI {fdp.car_performance_index}: resetting!")
+            print(f'New ordinal {self.car_ordinal}, PI {fdp.car_performance_index}: resetting!')
             print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
-        elif self.car_performance_index != fdp.car_performance_index:
-            self.reset()
-            self.car_performance_index = fdp.car_performance_index
-            print(f"PI changed {fdp.car_performance_index}: resetting!")
-            print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
+            print(f'Engine: {fdp.engine_idle_rpm:.0f} min rpm, {fdp.engine_max_rpm:.0f} max rpm')
 
     def loop_guess_revlimit(self, fdp):
         if self.get_revlimit() == -1 and config.revlimit_guess != -1:
