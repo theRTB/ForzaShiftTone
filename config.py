@@ -76,6 +76,9 @@ class config():
     #overestimates slope and intercept. Keeping the deque short limits this
     linreg_len_min = 15
     linreg_len_max = 20
+    
+    #draw underfill of >=x% of peak power in the power graph
+    graph_power_percentile = 0.9
         
     @classmethod
     def get_dict(cls):
