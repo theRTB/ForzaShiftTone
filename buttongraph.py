@@ -192,7 +192,7 @@ class ButtonGraph():
         #add a Car: (entry) frame up top for entering the car name
         #this is manual entry, automating is possible but very time consuming
         frame = tkinter.Frame(self.window)
-        car = tkinter.StringVar(value='Unknown')
+        car = tkinter.StringVar(value='')
         tkinter.Label(frame, text='Car:').pack(side=tkinter.LEFT)
         car_entry = tkinter.Entry(frame, textvariable=car)
         car_entry.pack(side=tkinter.RIGHT, fill=tkinter.X, expand=True)
