@@ -15,6 +15,13 @@ from matplotlib.ticker import MultipleLocator
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
                                                NavigationToolbar2Tk)
 
+#From: https://stackoverflow.com/questions/12695678/how-to-modify-the-navigation-toolbar-easily-in-a-matplotlib-figure-window
+#remove dysfunctional Subplots button from toolbar
+class NavigationToolbar(NavigationToolbar2Tk):
+    # only display the buttons we need
+    toolitems = [t for t in NavigationToolbar2Tk.toolitems if
+                 t[0] != 'Subplots']
+
 #class responsible for handling a tkinter button in the gui to display the
 #power graph when it has been collected. The button is disabled until the user
 #has collected a curve.
@@ -198,6 +205,6 @@ class ButtonGraph():
         car_entry.pack(side=tkinter.RIGHT, fill=tkinter.X, expand=True)
 
         frame.pack(side=tkinter.TOP, fill=tkinter.X)
-        NavigationToolbar2Tk(canvas, self.window)
+        NavigationToolbar(canvas, self.window)
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH,
                                           expand=True)
