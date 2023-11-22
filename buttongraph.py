@@ -161,10 +161,12 @@ class ButtonGraph():
         ax.xaxis.set_minor_locator(MultipleLocator(100))
         ax.xaxis.grid(True, which='minor', alpha=0.2)
 
-        #rewrite final xtick to be respected revlimit with text
-        #TODO: add check if closest xtick overlaps and if so, delete that label
+        #rewrite final xtick to '<revlimit> respected revlimit'
+        #if next-to-last tick is within 700 rpm: remove to avoid overlap
         xticks = ax.get_xticks()
         xticklabels = ax.get_xticklabels()
+        if final_rpm - xticks[-2] <= 700:
+            xticklabels[-2] = ''
         xticklabels[-1] = f'{final_rpm}\nrespected\nrevlimit'
         xticks[-1] = final_rpm
         ax.set_xticks(xticks)
@@ -173,6 +175,8 @@ class ButtonGraph():
         #set lower limit of graph to first multiple of 1000 below min rpm
         minrpm = min(rpm)
         xmin = minrpm - minrpm % 1000
+        
+        #reapply the axis limits and force respected rev limit as max
         ax.set_xlim(xmin, final_rpm)
         ax.set_ylim(ymin, ymax)
 
