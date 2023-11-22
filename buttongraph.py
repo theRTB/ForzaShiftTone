@@ -25,6 +25,17 @@ class NavigationToolbar(NavigationToolbar2Tk):
     # only display the buttons we need
     toolitems = [t for t in NavigationToolbar2Tk.toolitems if
                  t[0] != 'Subplots']
+    
+    def __init__(self, carname_var, *args, **kwargs):
+        self.carname_var = carname_var
+        super().__init__(*args, **kwargs)
+    
+    def save_figure(self, *args):
+        if title := self.carname_var.get():
+            self.canvas.figure.suptitle(title)
+        super().save_figure(self, *args)
+        self.canvas.figure.suptitle('')
+        self.canvas.draw_idle()
 
 #class responsible for handling a tkinter button in the gui to display the
 #power graph when it has been collected. The button is disabled until the user
@@ -202,13 +213,15 @@ class ButtonGraph():
 
         #add a Car: (entry) frame up top for entering the car name
         #this is manual entry, automating is possible but very time consuming
+        #the carname is added as title when saving the figure
         frame = tkinter.Frame(self.window)
-        car = tkinter.StringVar(value='')
+        carname_var = tkinter.StringVar(value='')
         tkinter.Label(frame, text='Car:').pack(side=tkinter.LEFT)
-        car_entry = tkinter.Entry(frame, textvariable=car)
+        car_entry = tkinter.Entry(frame, textvariable=carname_var)
         car_entry.pack(side=tkinter.RIGHT, fill=tkinter.X, expand=True)
 
         frame.pack(side=tkinter.TOP, fill=tkinter.X)
-        NavigationToolbar(canvas, self.window)
+        NavigationToolbar(canvas=canvas, window=self.window, 
+                          carname_var=carname_var)
         canvas.get_tk_widget().pack(side=tkinter.TOP, fill=tkinter.BOTH,
                                           expand=True)
