@@ -10,6 +10,10 @@ from mttkinter import mtTkinter as tkinter
 #import tkinter.ttk
 import numpy as np
 
+#Change default DPI when saving an image
+import matplotlib.pyplot as plt
+plt.rcParams['savefig.dpi'] = 100
+
 from matplotlib.figure import Figure
 from matplotlib.ticker import MultipleLocator
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
