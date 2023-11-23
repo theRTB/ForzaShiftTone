@@ -9,7 +9,7 @@
 - Per gear: Drive around on flat tarmac until you hear a double beep
   - Maintain fixed speed if it has trouble locking the gear ratio
 - On a flat straight: Apply full throttle starting from low rpm until you hear a triple beep
-  - Use a gear with low/no wheelspin
+  - Use a gear with low/no wheelspin but able to hit revlimit before the end of the straight
   - Try again if you hit the rev limiter for several consecutive seconds with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
@@ -29,7 +29,7 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 Changes:  
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
 - Added button to display the power graph:
-- Added statistics to power graph: Peak power, power at revlimit, 90% power range
+- Added statistics to power graph: Peak power, power at revlimit, 90% power range, relative ratio for >90% power
 ![example v0.77 BMW M5 2018 power graph](images/sample-BMW-M5-2018-14-2.png)
 
 ## Considerations
