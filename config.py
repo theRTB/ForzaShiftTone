@@ -47,8 +47,8 @@ class config():
     tone_offset_upper = 25
     tone_offset_outlier = 30 #discard for dynamic tone if above this distance
     
-    revlimit_percent = 0.985 #respected rev limit for trigger revlimit as pct%
-    revlimit_percent_lower = 0.950
+    revlimit_percent = 0.98 #respected rev limit for trigger revlimit as pct%
+    revlimit_percent_lower = 0.900
     revlimit_percent_upper = 0.998 #includes .998 due to floating point
     
     revlimit_offset = 6 #additional buffer in x packets for revlimit
