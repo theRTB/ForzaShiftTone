@@ -10,7 +10,7 @@
   - Maintain fixed speed if it has trouble locking the gear ratio
 - On a flat straight: Apply full throttle starting from low rpm until you hear a triple beep
   - Use a gear with low/no wheelspin
-  - Try again if you hit the rev limiter for a second or two with no triple beep
+  - Try again if you hit the rev limiter for several consecutive seconds with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
 ### Enable remote telemetry / Data out in Forza Motorsport / Forza Horizon 4/5
@@ -24,7 +24,7 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 
 ## Current release
 **ForzaShiftTone.vbs**: to launch the application (Preferred)  
-**ForzaShiftTone.bat**: to launch the application with an additional commandline window that shows debug information
+**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information
 
 Changes:  
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
