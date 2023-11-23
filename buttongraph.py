@@ -5,12 +5,13 @@ Created on Sat Nov  4 14:50:56 2023
 @author: RTB
 """
 
+import numpy as np
+
 from mttkinter import mtTkinter as tkinter
 #import tkinter
 #import tkinter.ttk
-import numpy as np
 
-#Change default DPI when saving an image
+#Change default DPI for when saving an image
 import matplotlib.pyplot as plt
 plt.rcParams['savefig.dpi'] = 100
 
@@ -30,6 +31,8 @@ class NavigationToolbar(NavigationToolbar2Tk):
         self.carname_var = carname_var
         super().__init__(*args, **kwargs)
     
+    #add title if user has defined the car name
+    #remove it after saving or the x,y coordinates of the toolbar get confused
     def save_figure(self, *args):
         if title := self.carname_var.get():
             self.canvas.figure.suptitle(title)
@@ -74,6 +77,7 @@ class ButtonGraph():
     def is_disabled(self):
         return self.button.cget('state') == tkinter.DISABLED
 
+    #pass through grid arguments to button
     def grid(self, *args, **kwargs):
         self.button.grid(*args, **kwargs)
 
