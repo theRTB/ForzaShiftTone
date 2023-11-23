@@ -2,7 +2,7 @@
 
 **Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
-![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13.png)
+![example v0.77 BMW M5 2018](images/sample-BMW-M5-2018-14-1.png)
 
 ## TL;DR
 
@@ -29,7 +29,8 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 Changes:  
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
 - Added button to display the power graph:
-![example v0.76 BMW M5 2018](images/sample-BMW-M5-2018-13-2.png)
+- Added statistics to power graph: Peak power, power at revlimit, 90% power range
+![example v0.77 BMW M5 2018 power graph](images/sample-BMW-M5-2018-14-2.png)
 
 ## Considerations
 
