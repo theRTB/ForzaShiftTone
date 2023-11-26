@@ -156,7 +156,7 @@ class ButtonGraph():
         #nudge percentile upwards, drop ratio a little relative to ymid
         x = (lower_limit + upper_limit)/2
         ratio = upper_limit/lower_limit
-        ax.annotate(f'{self.power_percentile:.1%}', (x, ymid*1.01),
+        ax.annotate(f'≥{self.power_percentile:.1%}', (x, ymid*1.01),
                     verticalalignment='bottom', horizontalalignment='center')
         ax.annotate(f'ratio {ratio:.2f}', (x, ymid*0.98),
                     verticalalignment='top', horizontalalignment='center')
