@@ -105,7 +105,7 @@ class ButtonGraph():
         ax.set_xlabel("rpm")
         ax.set_ylabel("power (kW)")
 
-        i = np.argmax(power)
+        i = np.argmax(np.round(power, 1))
         peak_power = power[i]
         peak_power_rpm = round(rpm[i]/50)*50
         final_power = power[-1]
