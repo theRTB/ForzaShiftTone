@@ -5,6 +5,7 @@ Created on Wed Aug  2 21:03:42 2023
 @author: RTB
 """
 
+from utility import deloop_and_sort
 from config import config
 
 #collects an array of packets at full throttle
@@ -33,6 +34,11 @@ class RunCollector():
         lowest_boost = peak_boost * self.LOWER_LIMIT_BOOST - 1e-3
         while len(self.run) > 0 and self.run[0].boost < lowest_boost:
             del self.run[0]
+        # self.run = [p for p in self.run if p.boost >= lowest_boost]
+        self.run = deloop_and_sort(array=self.run, 
+                                   key_x=lambda p: p.current_engine_rpm, 
+                                   key_y=lambda p: p.power, 
+                                   key_sort=lambda p: p.current_engine_rpm)
 
     def update(self, fdp):
         if self.state == 'WAIT':
