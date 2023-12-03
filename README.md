@@ -29,7 +29,7 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 Changes:  
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
 - Added button to display the power graph:
-- Added statistics to power graph: Peak power, power at revlimit, 90% power range, relative ratio for >90% power
+- Added statistics to power graph: Peak power, power at respected revlimit, 90% power range, relative ratio for >90% power
 ![example v0.77 BMW M5 2018 power graph](images/sample-BMW-M5-2018-14-2.png)
 
 ## Considerations
