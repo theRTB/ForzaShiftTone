@@ -21,7 +21,7 @@ class Curve ():
         return self.gear
     
     def get_peakpower_index(self):
-        return np.argmax(self.power)
+        return np.argmax(np.round(self.power, 1))
     
     #not necessarily the highest rpm, but valid for our purposes
     def get_revlimit(self):
