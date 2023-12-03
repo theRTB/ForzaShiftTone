@@ -8,7 +8,7 @@
 
 - Per gear: Drive around on flat tarmac until you hear a double beep
   - Maintain fixed speed if it has trouble locking the gear ratio
-- On a flat straight: Apply full throttle starting from low rpm until you hear a triple beep
+- On a flat straight: Hold full throttle starting from low rpm until you hear a triple beep
   - Use a gear with low/no wheelspin but able to hit revlimit before the end of the straight
   - Try again if you hit the rev limiter for several consecutive seconds with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
@@ -39,8 +39,7 @@ While it is intended to run in the background without consideration while drivin
   - If the gear ratio for that gear turns green there is no further data collection, it is locked in place.
   - Road surfaces are far more accurate than dirt/off-road
   - For AWD cars: maintain throttle at a fixed amount at speed for the first gear or two
-- The power curve requires a sweep from low RPM all the way to the rev limiter.
-- Starting from a low to medium RPM accelerate at full throttle all the way to rev limit. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts. There will be a short triple beep if succesful.
+- The power curve requires a full throttle sweep from low RPM all the way to the rev limiter. Rev limit should normally be avoided, but must be hit once for accurate data. Avoid impacts. There will be a short triple beep if succesful.
   - At minimum the power at the start must be equal or lower than power at revlimit. For most cars this is easy to achieve by starting at around halfway redline
   - Boost is taken into account. Some cars with very high boost may require a run at relatively low rpm in a relatively high gear to ensure enough data points at peak boost
   - Flat tarmac is preferable.
@@ -85,4 +84,3 @@ There is one packet per 16.667 milliseconds, approximately.
 - Application will on rare occasions crash: related to the UI library and cannot be fixed
 - The application assumes at least one frame of negative power as the first frame of shifting
   - Some cars shift so fast that power never goes negative: dynamic shift tone will not function properly
-- The power curve is not filtered. Noisy data can cause target shift rpm that are incorrect.
