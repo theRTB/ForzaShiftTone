@@ -11,7 +11,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from fdp import ForzaDataPacket
 
 class ForzaUDPLoop():
-    def __init__(self, ip, port, packet_format, loop_func, *args, **kwargs):
+    def __init__(self, ip, port, packet_format, loop_func):
         self.threadPool = ThreadPoolExecutor(max_workers=8,
                                              thread_name_prefix="exec")
         self.isRunning = False
@@ -20,7 +20,6 @@ class ForzaUDPLoop():
         self.port = port
         self.packet_format = packet_format
         self.loop_func = loop_func
-        super().__init__(*args, **kwargs)
 
     def loop_toggle(self, toggle=None):
         if toggle and not self.isRunning:
