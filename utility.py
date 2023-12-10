@@ -45,6 +45,9 @@ def deloop_and_sort(array, key_x, key_y, key_sort, max_loop=50):
                           y=[key_y(a) for a in array], max_loop=max_loop)
     return sorted(it.compress(array, selectors), key=key_sort)
 
+def round_to(val, n):
+    return round(val/n)*n
+
 #multibeep has a simple sleep in it, which will freeze the UI if called
 #we could probably throw this function into the ThreadPool at the cost of
 #consistency
