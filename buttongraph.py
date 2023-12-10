@@ -46,7 +46,7 @@ class PowerGraph():
 
         ax.plot(rpm, power)
         ax.grid()
-        ax.set_xlabel("rpm")
+        ax.set_xlabel("rpm", labelpad=-20)
         ax.set_ylabel("power (kW)")
 
         #get axis limits to force limits later, annotating moves some of these
