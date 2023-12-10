@@ -87,12 +87,14 @@ class Gear():
         self.ratio_deque = deque(maxlen=self.DEQUE_LEN)
         self.shiftrpm = -1
         self.ratio = 0
+        self.relratio = 0
 
     def reset(self):
         self.state.reset()
         self.ratio_deque.clear()
         self.set_shiftrpm(-1)
         self.set_ratio(0)
+        self.set_relratio(0)
 
     def get_shiftrpm(self):
         return self.shiftrpm
@@ -105,6 +107,12 @@ class Gear():
 
     def set_ratio(self, val):
         self.ratio = val
+        
+    def get_relratio(self):
+        return self.relratio
+    
+    def set_relratio(self, val):
+        self.relratio = val
 
     #if we have a new (and better curve) we reduce the state of the gear
     #to have it recalculate the shiftrpm later
@@ -145,9 +153,12 @@ class Gear():
 
     def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
-            shiftrpm = calculate_shiftrpm(rpm, power,
-                                 self.get_ratio() / nextgear.get_ratio())
+            relratio = self.get_ratio() / nextgear.get_ratio()
+            shiftrpm = calculate_shiftrpm(rpm, power, relratio)
+            
+            self.set_relratio(relratio)
             self.set_shiftrpm(shiftrpm)
+            
             self.to_next_state()
 
 #class to hold all gears up to the maximum of MAXGEARS
@@ -201,6 +212,7 @@ class GUIGear (Gear):
     def __init__(self, number):
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
+        self.relratio_var = tkinter.StringVar()
         super().__init__(number)
         super().reset()
 
@@ -215,10 +227,15 @@ class GUIGear (Gear):
                                    width=self.ENTRY_WIDTH)
         self.shiftrpm_entry = self.init_gui_entry(root, self.shiftrpm_var)
         self.ratio_entry = self.init_gui_entry(root, self.ratio_var)
+        self.relratio_entry = tkinter.Entry(root, textvariable=self.relratio_var,
+                                width=self.ENTRY_WIDTH, justify=tkinter.CENTER,
+                                 state='readonly')
 
         self.label.grid(row=starting_row, column=column)
         if number != MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
+            self.relratio_entry.grid(row=starting_row+3, column=column,
+                                     columnspan=2)
         self.ratio_entry.grid(row=starting_row+2, column=column)
         self.update_entry_colors()
 
@@ -233,6 +250,10 @@ class GUIGear (Gear):
     def set_ratio(self, val):
         super().set_ratio(val)
         self.ratio_var.set(f'{val:.3f}')
+        
+    def set_relratio(self, val):
+        super().set_relratio(val)
+        self.relratio_var.set(f'{val:.2f}')
 
     def get_entry_colors(self):
         for state, colors in self.ENTRY_COLORS.items():
@@ -245,15 +266,17 @@ class GUIGear (Gear):
         self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg,
                                    fg=shiftrpm_fg)
         self.ratio_entry.config(readonlybackground=ratio_bg, fg=ratio_fg)
+        self.relratio_entry.config(readonlybackground=shiftrpm_bg, 
+                                   fg=shiftrpm_fg)
 
     def to_next_state(self):
         super().to_next_state()
         self.update_entry_colors()
 
 class GUIGears(Gears):
-    LABELS = ['Gear', 'Target', 'Ratio']
+    LABELS = ['Gear', 'Target', 'Ratio', 'Rel. Ratio']
     LABEL_WIDTH = 7
-    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
+    ROW_COUNT = 4 #for ForzaBeep GUI: how many grid rows a gear takes up
     def __init__(self):
         self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
 
