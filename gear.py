@@ -78,7 +78,7 @@ class GearState():
 class Gear():
     DEQUE_MIN, DEQUE_LEN  = 40, 60
 
-    #              FWD    RWD    AWD (awd lower due to center diff variance)
+    #              FWD    RWD    AWD
     VAR_BOUNDS = [1e-04, 1e-04, 1e-04]
 
     def __init__(self, number):
@@ -88,6 +88,8 @@ class Gear():
         self.shiftrpm = -1
         self.ratio = 0
         self.relratio = 0
+        self.variance = math.inf
+        self.var_bound = self.VAR_BOUNDS[DRIVETRAIN_RWD]
 
     def reset(self):
         self.state.reset()
@@ -95,6 +97,8 @@ class Gear():
         self.set_shiftrpm(-1)
         self.set_ratio(0)
         self.set_relratio(0)
+        self.set_variance(math.inf)
+        self.var_bound = self.VAR_BOUNDS[DRIVETRAIN_RWD]
 
     def get_shiftrpm(self):
         return self.shiftrpm
@@ -113,6 +117,12 @@ class Gear():
     
     def set_relratio(self, val):
         self.relratio = val
+        
+    def get_variance(self):
+        return self.variance
+    
+    def set_variance(self, val):
+        self.variance = val
 
     #if we have a new (and better curve) we reduce the state of the gear
     #to have it recalculate the shiftrpm later
@@ -130,8 +140,7 @@ class Gear():
         if self.state.at_least_locked():
             return
 
-        ratio = derive_gearratio(fdp)
-        if ratio is None:
+        if not (ratio := derive_gearratio(fdp)):
             return
 
         self.ratio_deque.append(ratio)
@@ -140,16 +149,20 @@ class Gear():
 
         median = statistics.median(self.ratio_deque)
         var = statistics.variance(self.ratio_deque)
+        self.set_ratio(median)
+        self.set_variance(var)
 
-        var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
-        if var < var_bound and len(self.ratio_deque) >= self.DEQUE_MIN:
+        if self.var_bound is None:
+            self.var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
+            
+        if (self.variance < self.var_bound and 
+                len(self.ratio_deque) >= self.DEQUE_MIN):
             self.to_next_state() #implied from reached to locked
             print(f'LOCKED {self.gear}')
             if config.notification_gear_enabled:
                 multi_beep(config.notification_file,
                            config.notification_gear_count,
                            config.notification_gear_delay)
-        self.set_ratio(median)
 
     def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
@@ -213,6 +226,7 @@ class GUIGear (Gear):
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
         self.relratio_var = tkinter.StringVar()
+        self.variance_var = tkinter.StringVar()
         super().__init__(number)
         super().reset()
 
@@ -227,16 +241,20 @@ class GUIGear (Gear):
                                    width=self.ENTRY_WIDTH)
         self.shiftrpm_entry = self.init_gui_entry(root, self.shiftrpm_var)
         self.ratio_entry = self.init_gui_entry(root, self.ratio_var)
-        self.relratio_entry = tkinter.Entry(root, textvariable=self.relratio_var,
+        self.variance_entry = self.init_gui_entry(root, self.variance_var)
+        self.relratio_entry = tkinter.Entry(root, 
+                                textvariable=self.relratio_var,
                                 width=self.ENTRY_WIDTH, justify=tkinter.CENTER,
-                                 state='readonly')
+                                state='readonly')
 
         self.label.grid(row=starting_row, column=column)
         if number != MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
-            self.relratio_entry.grid(row=starting_row+3, column=column,
+            self.relratio_entry.grid(row=starting_row+2, column=column,
                                      columnspan=2)
-        self.ratio_entry.grid(row=starting_row+2, column=column)
+        self.ratio_entry.grid(   row=starting_row+3, column=column)
+        self.variance_entry.grid(row=starting_row+4, column=column)
+        
         self.update_entry_colors()
 
     def reset(self):
@@ -254,6 +272,12 @@ class GUIGear (Gear):
     def set_relratio(self, val):
         super().set_relratio(val)
         self.relratio_var.set(f'{val:.2f}')
+        
+    def set_variance(self, val):
+        super().set_variance(val)
+        factor = math.log(val) / math.log(self.var_bound)
+        factor = min(max(factor, 0), 1)
+        self.variance_var.set(f'{factor:.0%}')
 
     def get_entry_colors(self):
         for state, colors in self.ENTRY_COLORS.items():
@@ -274,9 +298,9 @@ class GUIGear (Gear):
         self.update_entry_colors()
 
 class GUIGears(Gears):
-    LABELS = ['Gear', 'Target', 'Ratio', 'Rel. Ratio']
+    LABELS = ['Gear', 'Target', 'Rel. Ratio', 'Ratio', 'Variance']
     LABEL_WIDTH = 7
-    ROW_COUNT = 4 #for ForzaBeep GUI: how many grid rows a gear takes up
+    ROW_COUNT = 5 #for ForzaBeep GUI: how many grid rows a gear takes up
     def __init__(self):
         self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
 
