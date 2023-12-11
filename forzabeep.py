@@ -44,7 +44,7 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
 #seconds after launching, despite the back-end still updating
 class ForzaBeep():
     TITLE = "ForzaShiftTone: Dynamic shift tone for the Forza series"
-    WIDTH, HEIGHT = 745, 255
+    WIDTH, HEIGHT = 750, 285
     
     DEFAULT_GUI_VALUE = 'N/A'
 
@@ -77,10 +77,11 @@ class ForzaBeep():
         if screen_dpi <= 96.0:
             width += 40 #hack for 100% size scaling in Windows
         
-        self.root.geometry(f"{width}x{height}")
+        # self.root.geometry(f"{width}x{height}")
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.resizable(False, False)
         self.root.tk.call('tk', 'scaling', dpi_factor)
+        # self.root.attributes('-toolwindow', True)
 
     def __init__vars(self):
         self.we_beeped = 0
