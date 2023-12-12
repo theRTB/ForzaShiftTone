@@ -59,6 +59,8 @@ class ForzaBeep():
         self.__init__tkinter()
         self.__init__vars()
         self.__init__window()
+        
+        self.startstop_handler() #trigger start of loop
         self.root.mainloop()
 
     def __init__tkinter(self):
@@ -106,7 +108,7 @@ class ForzaBeep():
 
     def __init__window_buffers_frame(self, row):
         frame = tkinter.LabelFrame(self.root, text='Variables')
-        frame.grid(row=row, column=5, rowspan=4, columnspan=4, stick='EW')
+        frame.grid(row=row, column=5, rowspan=3, columnspan=4, sticky='EW')
 
         self.tone_offset = GUIConfigVariable_ToneOffset(frame, 0)
         self.hysteresis_percent = GUIConfigVariable_HysteresisPercent(frame, 1)
@@ -135,29 +137,22 @@ class ForzaBeep():
         tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
                                                   sticky=tkinter.W)
 
-        resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3)
-        resetbutton.grid(row=row, column=3)
-        resetbutton.bind('<Button-1>', self.reset)
-
-        self.buttongraph = ButtonGraph(self.root, self.graphbutton_handler,
-                                       config)
-        self.buttongraph.grid(row=row, column=9, rowspan=2, columnspan=2,
-                              sticky=tkinter.NW)
-
         self.__init__window_buffers_frame(row)
-
-        self.volume = tkinter.IntVar(value=config.volume)
-        tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
-                      from_=0, to=-30, variable=self.volume, resolution=10
-                      ).grid(row=row, column=10, columnspan=1, rowspan=3,
-                             sticky=tkinter.SE)
+        
+        volume = tkinter.Label(self.root, text='Volume')
+        volume.grid(row=row, column=9, columnspan=2, sticky=tkinter.SE)
 
         row += 1 #continue on next row
         
+        self.volume = tkinter.IntVar(value=config.volume)
+        scale = tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
+                      from_=0, to=-30, variable=self.volume, resolution=10)
+        scale.grid(row=row, column=10, columnspan=1, rowspan=2, 
+                    sticky=tkinter.NE)
+        
+        peakpower = tkinter.Label(self.root, text='Peak')
+        peakpower.grid(row=row, column=0, columnspan=1, sticky=tkinter.E)     
         self.peakpower = tkinter.StringVar(value='')
-        tkinter.Label(self.root, text='Peak\npower').grid(row=row, column=0,
-                                                         columnspan=1, 
-                                                         sticky=tkinter.E)        
         peak = tkinter.Entry(self.root, textvariable=self.peakpower, 
                              width=22, state='readonly')
         peak.grid(row=row, column=1, sticky=tkinter.W, columnspan=4)
@@ -175,16 +170,27 @@ class ForzaBeep():
         tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
                                                   sticky=tkinter.W)
 
-        self.active = tkinter.IntVar(value=1)
-        if self.active.get():     #trigger loop if active by default
-            self.active_handler() #comparable to tkinter mainloop func
-        tkinter.Checkbutton(self.root, text='Active',
-                            variable=self.active, command=self.active_handler
-                            ).grid(row=row, column=3, columnspan=2,
-                                   sticky=tkinter.W)
+        resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3,
+                                     command=self.reset)
+        resetbutton.grid(row=row, column=3)
 
-        tkinter.Label(self.root, text='Volume').grid(row=row, column=9,
-                                                     columnspan=2)
+        self.startstop_var = tkinter.StringVar(value='Idle')
+        startstopbutton = tkinter.Button(self.root, borderwidth=3, 
+                                         textvariable=self.startstop_var, 
+                                         command=self.startstop_handler)
+        startstopbutton.grid(row=row, column=4)
+
+        # row += 1 #continue on next row
+        
+        self.buttongraph = ButtonGraph(self.root, self.graphbutton_handler,
+                                       config)
+        self.buttongraph.grid(row=row, column=9, rowspan=2, columnspan=2,
+                              sticky=tkinter.NW)
+        
+
+    def startstop_handler(self, event=None):
+        self.startstop_var.set('Start' if self.loop.is_running() else 'Stop')
+        self.loop.loop_toggle(True)
 
     def graphbutton_handler(self, event=None):
         self.buttongraph.create_graphwindow(self.curve, 
@@ -199,9 +205,6 @@ class ForzaBeep():
         rpm = self.curve.rpm[index]
         rpm = int(round(rpm/50, 0)*50) #round to nearest 50
         self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} RPM')
-
-    def active_handler(self):
-        self.loop.loop_toggle(self.active.get())
                                    
     def edit_handler(self):
         varlist = [self.revlimit_offset, self.revlimit_percent,

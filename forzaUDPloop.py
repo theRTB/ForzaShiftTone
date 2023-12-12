@@ -49,6 +49,9 @@ class ForzaUDPLoop():
         except BaseException as e:
             print(e)
 
+    def is_running(self):
+        return self.isRunning
+
     def loop_close(self):
         """close program
         """
