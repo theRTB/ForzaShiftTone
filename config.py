@@ -15,10 +15,10 @@ class config():
     # packet_format = 'phased_out'
     
     sound_file = 'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
-    sound_files = {  0:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
-                   -10:'audio/audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
-                   -20:'audio/audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
-                   -30:'audio/audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
+    sound_files = {100:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
+                    75:'audio/audiocheck.net_sin_1000Hz_-13dBFS_0.1s.wav',
+                    50:'audio/audiocheck.net_sin_1000Hz_-23dBFS_0.1s.wav',
+                    25:'audio/audiocheck.net_sin_1000Hz_-33dBFS_0.1s.wav' }
     
     notification_file = 'audio/audiocheck.net_sin_1500Hz_-13dBFS_0.05s.wav'
     notification_gear_enabled = True
@@ -28,7 +28,7 @@ class config():
     notification_power_count = 3
     notification_power_delay = 0.04
     
-    volume = -10 #default volume
+    volume = 75 #default volume
     
     window_scalar = 1 #scale window by this factor
     

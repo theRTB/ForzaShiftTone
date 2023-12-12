@@ -145,8 +145,8 @@ class ForzaBeep():
         row += 1 #continue on next row
         
         self.volume = tkinter.IntVar(value=config.volume)
-        scale = tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=0,
-                      from_=0, to=-30, variable=self.volume, resolution=10)
+        scale = tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=1,
+                      from_=100, to=0, variable=self.volume, resolution=25)
         scale.grid(row=row, column=10, columnspan=1, rowspan=2, 
                     sticky=tkinter.NE)
         
@@ -242,9 +242,6 @@ class ForzaBeep():
         self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
 
         self.gears.reset()
-
-    def get_soundfile(self):
-        return config.sound_files[self.volume.get()]
 
     def get_revlimit(self):
         return self.revlimit
@@ -372,6 +369,11 @@ class ForzaBeep():
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
 
+    #play beep depending on volume. If volume is zero, skip beep
+    def do_beep(self):
+        if volume_level := self.volume.get():
+            beep(filename=config.sound_files[volume_level])
+
     def loop_beep(self, fdp):
         rpm = fdp.current_engine_rpm
         beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
@@ -380,7 +382,7 @@ class ForzaBeep():
                 self.beep_counter = config.beep_counter_max
                 self.we_beeped = config.we_beep_max
                 self.tone_offset.start_counter()
-                beep(filename=self.get_soundfile())
+                self.do_beep()
             elif rpm < math.ceil(beep_rpm*config.beep_rpm_pct):
                 self.beep_counter = 0
         elif (self.beep_counter > 0 and (rpm < beep_rpm or beep_rpm == -1)):
