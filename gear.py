@@ -252,14 +252,15 @@ class GUIGear (Gear):
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
             self.relratio_entry.grid(row=starting_row+2, column=column,
                                      columnspan=2)
-        self.ratio_entry.grid(   row=starting_row+3, column=column)
-        self.variance_entry.grid(row=starting_row+4, column=column)
+        # self.ratio_entry.grid(   row=starting_row+3, column=column)
+        self.variance_entry.grid(row=starting_row+1, column=column)
         
         self.update_entry_colors()
 
     def reset(self):
         super().reset()
         self.update_entry_colors()
+        self.variance_entry.grid()
 
     def set_shiftrpm(self, val):
         super().set_shiftrpm(val)
@@ -296,11 +297,13 @@ class GUIGear (Gear):
     def to_next_state(self):
         super().to_next_state()
         self.update_entry_colors()
+        if self.state.at_final():
+            self.variance_entry.grid_remove()
 
 class GUIGears(Gears):
-    LABELS = ['Gear', 'Target', 'Rel. Ratio', 'Ratio', 'Variance']
-    LABEL_WIDTH = 7
-    ROW_COUNT = 5 #for ForzaBeep GUI: how many grid rows a gear takes up
+    LABELS = ['Gear', 'Target', 'Rel. Ratio']#, 'Variance']
+    LABEL_WIDTH = 8
+    ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
     def __init__(self):
         self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
 
@@ -321,14 +324,11 @@ def derive_gearratio(fdp):
 
     rad = 0
     if fdp.drivetrain_type == DRIVETRAIN_FWD:
-        rad = (fdp.wheel_rotation_speed_FL +
-               fdp.wheel_rotation_speed_FR) / 2.0
+        rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR) / 2.0
     elif fdp.drivetrain_type == DRIVETRAIN_RWD:
-        rad = (fdp.wheel_rotation_speed_RL +
-               fdp.wheel_rotation_speed_RR) / 2.0
+        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
     else:  #AWD
-        rad = (fdp.wheel_rotation_speed_RL +
-               fdp.wheel_rotation_speed_RR) / 2.0
+        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
         # rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR +
         #     fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 4.0
     if abs(rad) <= 1e-6:
