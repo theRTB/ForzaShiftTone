@@ -27,11 +27,10 @@ To enable remote telemetry in Forza Motorsport 8 on Steam for this application:
 **ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information
 
 Changes:  
+- Moved from displaying absolute drivetrain ratios to relative ratios between gears
 - Removed zipped PyInstaller executables; they are considered a virus to due over-zealous machine-learning detection algorithms.
-- Added button to display the power graph:
 - Added statistics to power graph: Peak power, power at respected revlimit, 90% power range, relative ratio for >90% power
 ![example v0.78 BMW M5 2018 power graph](images/sample-BMW-M5-2018-15-2.png)
-- Moved from displaying absolute drivetrain ratios to relative ratios between gears
 
 ## Implementation
 
@@ -47,7 +46,7 @@ If you choose to not shift and remain above the trigger rpm, the program will no
 
 ## Settings
 
-The settings are saved to _config.json_ on exit. This includes Tone offset, Hysteresis, Revlimit %, Revlimit ms and Volume.  
+The settings are saved to _config.json_ on exit. This includes Tone offset, Hysteresis, Revlimit %, Revlimit ms and Volume. The power curve and gear ratios are not saved.  
 Remote telemetry sends data at 60 packets per second. The offset variables (Tone offset, revlimit ms) while defined in milliseconds currently use packet counts in the backend.  
 There is one packet per 16.667 milliseconds, approximately.
 
