@@ -46,7 +46,7 @@ class PowerGraph():
 
         ax.plot(rpm, power)
         ax.grid()
-        ax.set_xlabel("rpm", labelpad=-20)
+        ax.set_xlabel("rpm", labelpad=-10)
         ax.set_ylabel("power (kW)")
 
         #get axis limits to force limits later, annotating moves some of these
@@ -165,7 +165,7 @@ class PowerWindow():
     TITLE = "ForzaShiftTone: Power graph"
 
     #target width and height of the graph, not the window
-    WIDTH, HEIGHT= 745, 500
+    WIDTH, HEIGHT= 750, 500
     FIGURE_DPI = 72
 
     #round various RPM values to nearest value of ROUND
