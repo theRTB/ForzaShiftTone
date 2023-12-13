@@ -111,16 +111,16 @@ class Gear():
 
     def set_ratio(self, val):
         self.ratio = val
-        
+
     def get_relratio(self):
         return self.relratio
-    
+
     def set_relratio(self, val):
         self.relratio = val
-        
+
     def get_variance(self):
         return self.variance
-    
+
     def set_variance(self, val):
         self.variance = val
 
@@ -154,8 +154,8 @@ class Gear():
 
         if self.var_bound is None:
             self.var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
-            
-        if (self.variance < self.var_bound and 
+
+        if (self.variance < self.var_bound and
                 len(self.ratio_deque) >= self.DEQUE_MIN):
             self.to_next_state() #implied from reached to locked
             print(f'LOCKED {self.gear}')
@@ -168,10 +168,10 @@ class Gear():
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
             relratio = self.get_ratio() / nextgear.get_ratio()
             shiftrpm = calculate_shiftrpm(rpm, power, relratio)
-            
+
             self.set_relratio(relratio)
             self.set_shiftrpm(shiftrpm)
-            
+
             self.to_next_state()
 
 #class to hold all gears up to the maximum of MAXGEARS
@@ -204,6 +204,9 @@ class Gears():
         self.gears[gear].update(fdp)
 
 #class for GUI display of class Gear
+#In the GUI the entry for variance is gridded over shiftrpm until shiftrpm
+#is calculated. There is a toggle for relative ratio and drivetrain ratio by
+#double-clicking the Rel. Ratio / Ratio label in GUIGears
 class GUIGear (Gear):
     ENTRY_WIDTH = 6
 
@@ -230,31 +233,31 @@ class GUIGear (Gear):
         super().__init__(number)
         super().reset()
 
-        # self.__init__window(root, number, column, starting_row)
+    def init_gui_entry(self, root, name, justify=tkinter.RIGHT):
+        textvariable = getattr(self, f'{name}_var')
+        entry = tkinter.Entry(root, state='readonly', width=self.ENTRY_WIDTH,
+                              textvariable=textvariable, justify=justify)
+        setattr(self, f'{name}_entry', entry)
 
-    def init_gui_entry(self, root, variable):
-        return tkinter.Entry(root, textvariable=variable, state='readonly',
-                             width=self.ENTRY_WIDTH, justify=tkinter.RIGHT)
-
+    #called by GUIGears
     def init_window(self, root, number, column, starting_row=0):
         self.label = tkinter.Label(root, text=f'{number}',
                                    width=self.ENTRY_WIDTH)
-        self.shiftrpm_entry = self.init_gui_entry(root, self.shiftrpm_var)
-        self.ratio_entry = self.init_gui_entry(root, self.ratio_var)
-        self.variance_entry = self.init_gui_entry(root, self.variance_var)
-        self.relratio_entry = tkinter.Entry(root, 
-                                textvariable=self.relratio_var,
-                                width=self.ENTRY_WIDTH, justify=tkinter.CENTER,
-                                state='readonly')
+        for name in ['shiftrpm', 'ratio', 'variance']:
+            self.init_gui_entry(root, name)
+        self.init_gui_entry(root, 'relratio', justify=tkinter.CENTER)
 
         self.label.grid(row=starting_row, column=column)
         if number != MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
             self.relratio_entry.grid(row=starting_row+2, column=column,
-                                     columnspan=2)
-        # self.ratio_entry.grid(   row=starting_row+3, column=column)
+                                      columnspan=2)
         self.variance_entry.grid(row=starting_row+1, column=column)
-        
+
+        #let tkinter memorize grid location, then temporarily hide ratio entry
+        self.ratio_entry.grid(row=starting_row+2, column=column)
+        self.ratio_entry.grid_remove()
+
         self.update_entry_colors()
 
     def reset(self):
@@ -269,11 +272,11 @@ class GUIGear (Gear):
     def set_ratio(self, val):
         super().set_ratio(val)
         self.ratio_var.set(f'{val:.3f}')
-        
+
     def set_relratio(self, val):
         super().set_relratio(val)
         self.relratio_var.set(f'{val:.2f}')
-        
+
     def set_variance(self, val):
         super().set_variance(val)
         factor = math.log(val) / math.log(self.var_bound)
@@ -291,7 +294,7 @@ class GUIGear (Gear):
         self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg,
                                    fg=shiftrpm_fg)
         self.ratio_entry.config(readonlybackground=ratio_bg, fg=ratio_fg)
-        self.relratio_entry.config(readonlybackground=shiftrpm_bg, 
+        self.relratio_entry.config(readonlybackground=shiftrpm_bg,
                                    fg=shiftrpm_fg)
 
     def to_next_state(self):
@@ -300,20 +303,45 @@ class GUIGear (Gear):
         if self.state.at_final():
             self.variance_entry.grid_remove()
 
+    def toggle_ratio_display(self):
+        if self.ratio_entry.winfo_viewable():
+            if self.gear != MAXGEARS:
+                self.relratio_entry.grid()
+            self.ratio_entry.grid_remove()
+        else:
+            self.relratio_entry.grid_remove()
+            self.ratio_entry.grid()
+
 class GUIGears(Gears):
-    LABELS = ['Gear', 'Target', 'Rel. Ratio']#, 'Variance']
     LABEL_WIDTH = 8
     ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
     def __init__(self):
         self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
 
+    #called by ForzaBeep
     def init_window(self, root):
-        for i, text in enumerate(self.LABELS):
-            tkinter.Label(root, text=text, width=self.LABEL_WIDTH,
-                          anchor=tkinter.E).grid(row=i, column=0)
+
+        tkinter.Label(root, text='Gear', anchor=tkinter.E,
+                      width=self.LABEL_WIDTH).grid(row=0, column=0)
+        tkinter.Label(root, text='Target', anchor=tkinter.E,
+                      width=self.LABEL_WIDTH).grid(row=1, column=0)
+
+        self.ratio_var = tkinter.StringVar(value='Rel. Ratio')
+        label = tkinter.Label(root, textvariable=self.ratio_var,
+                              anchor=tkinter.E, width=self.LABEL_WIDTH)
+        label.grid(row=2, column=0)
+        label.bind('<Double-Button-1>', self.ratio_handler)
 
         for i, g in enumerate(self.gears[1:], start=1):
             g.init_window(root, i, i)
+
+    def ratio_handler(self, event=None):
+        if self.ratio_var.get() == 'Rel. Ratio':
+            self.ratio_var.set('Ratio')
+        else:
+            self.ratio_var.set('Rel. Ratio')
+        for gear in self.gears[1:]:
+            gear.toggle_ratio_display()
 
 #if the clutch is engaged, we can use engine rpm and wheel rotation speed
 #to derive the ratio between these two: the gear ratio
