@@ -13,7 +13,7 @@
   - Try again if you hit the rev limiter for several consecutive seconds with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
-### Enable remote telemetry / Data out in Forza Motorsport / Forza Horizon 4/5
+### Enable Data Out (remote telemetry) in Forza Motorsport / Forza Horizon 4/5
 
 To enable remote telemetry in Forza Motorsport 8 on Steam for this application: 
 - Head to **Settings** -> **Gameplay & HUD** -> scroll down to the bottom (**HUD and Gameplay** in Forza Horizon 5)
