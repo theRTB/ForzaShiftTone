@@ -60,6 +60,9 @@ class GearState():
     def at_final(self):
         return self.state == self.CALCULATED
 
+    def __hash__(self):
+        return hash(self.state)
+
     def __eq__(self, other):
         if self.__class__ is other.__class__:
             return self.state == other.state
@@ -214,16 +217,19 @@ class GUIGear (Gear):
     BG_UNUSED  = '#F0F0F0'
     BG_REACHED = '#FFFFFF'
     BG_LOCKED  = '#CCDDCC'
-    #                             tuple of shiftpm_fg, shiftrpm_bg,
-    #                                       entry_fg    entry_bg
-    ENTRY_COLORS = {GearState.UNUSED:     (BG_UNUSED,  BG_UNUSED,
-                                           BG_UNUSED,  BG_UNUSED),
-                    GearState.REACHED:    (BG_UNUSED,  BG_UNUSED,
-                                           FG_DEFAULT, BG_REACHED),
-                    GearState.LOCKED:     (BG_REACHED, BG_REACHED,
-                                           FG_DEFAULT, BG_LOCKED),
-                    GearState.CALCULATED: (FG_DEFAULT, BG_LOCKED,
-                                           FG_DEFAULT, BG_LOCKED)}
+    #                             tuple of (shiftpm_fg, shiftrpm_bg),
+    #                                      (entry_fg    entry_bg)
+    ENTRY_COLORS = {GearState.UNUSED:     ((BG_UNUSED,  BG_UNUSED),
+                                           (BG_UNUSED,  BG_UNUSED)),
+                    GearState.REACHED:    ((BG_UNUSED,  BG_UNUSED),
+                                           (FG_DEFAULT, BG_REACHED)),
+                    GearState.LOCKED:     ((BG_REACHED, BG_REACHED),
+                                           (FG_DEFAULT, BG_LOCKED)),
+                    GearState.CALCULATED: ((FG_DEFAULT, BG_LOCKED),
+                                           (FG_DEFAULT, BG_LOCKED))}
+    for key, (t1, t2) in ENTRY_COLORS.items():
+        ENTRY_COLORS[key] = (dict(zip(['fg', 'readonlybackground'], t1)), 
+                             dict(zip(['fg', 'readonlybackground'], t2)))
 
     def __init__(self, number):
         self.shiftrpm_var = tkinter.IntVar()
@@ -283,19 +289,12 @@ class GUIGear (Gear):
         factor = min(max(factor, 0), 1)
         self.variance_var.set(f'{factor:.0%}')
 
-    def get_entry_colors(self):
-        for state, colors in self.ENTRY_COLORS.items():
-            if state == self.state:
-                return colors
-
     def update_entry_colors(self):
-        shiftrpm_fg, shiftrpm_bg, ratio_fg, ratio_bg = self.get_entry_colors()
-
-        self.shiftrpm_entry.config(readonlybackground=shiftrpm_bg,
-                                   fg=shiftrpm_fg)
-        self.ratio_entry.config(readonlybackground=ratio_bg, fg=ratio_fg)
-        self.relratio_entry.config(readonlybackground=shiftrpm_bg,
-                                   fg=shiftrpm_fg)
+        shiftrpm_colors, ratio_colors = self.ENTRY_COLORS[self.state]
+        
+        self.shiftrpm_entry.config(**shiftrpm_colors)
+        self.ratio_entry.config(**ratio_colors)
+        self.relratio_entry.config(**shiftrpm_colors)
 
     def to_next_state(self):
         super().to_next_state()
