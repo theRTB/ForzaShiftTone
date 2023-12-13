@@ -15,7 +15,7 @@
 
 ### Enable Data Out in Forza Motorsport / Forza Horizon 4/5
 
-To enable Data Out (remote telemetry) in Forza Motorsport 8 on Steam for this application: 
+To configure Data Out (remote telemetry) in supported Forza games on Steam for this application: 
 - Head to **Settings** -> **Gameplay & HUD** -> scroll down to the bottom (**HUD and Gameplay** in Forza Horizon 5)
 - Set **Data Out** to _On_, enter _127.0.0.1_ as **Data out IP address** and **Data out IP port** _12350_. You may have to restart the game.
 - The **Data Out Packet Format** should be set to '_Car Dash_' for Forza Motorsport
@@ -39,7 +39,7 @@ There are three triggers:
 - Shift RPM: The RPM value at which power in the current becomes lower than the power in the next gear: the ideal time to upshift. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
 - Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
   - Example: A rev limit of 7500 and a value of 98.0% triggers a beep if it predicts 7350 rpm will be reached in 283 milliseconds
-- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 100 milliseconds, which leads to a prediction distance of 383ms.
+- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 100 milliseconds, which leads to a prediction distance of 383ms
 
 The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers.  
 If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
@@ -52,8 +52,10 @@ There is one packet per 16.667 milliseconds, approximately.
 
 ### Per gear:
 
-- Target: Derived shift rpm value. This requires the ratio of the current gear and the next gear to be determined (green background)
-- Rel. Ratio: The relative ratio of the gear ratios between two consecutive gears. If gear 1 has a drivetrain ratio of 15 and gear 2 has a drivetrain ratio of 11 then the relative ratio is 15/11 = 1.36 approximately.
+- Target: The derived shift rpm value.  
+This requires a power curve and the ratio of the current gear and the next gear to be determined (green background)
+- Rel. Ratio: The relative ratio of the gear ratios between two consecutive gears.  
+If gear 1 has a drivetrain ratio of 15 and gear 2 has a drivetrain ratio of 11 then the relative ratio is 15/11 = 1.36 approximately
 
 ### General configuration:
 
