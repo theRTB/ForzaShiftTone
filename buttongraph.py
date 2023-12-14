@@ -46,7 +46,7 @@ class PowerGraph():
 
         ax.plot(rpm, power)
         ax.grid()
-        ax.set_xlabel("rpm", labelpad=-10)
+        ax.set_xlabel("rpm")#, labelpad=-10)
         ax.set_ylabel("power (kW)")
 
         #get axis limits to force limits later, annotating moves some of these
@@ -110,6 +110,7 @@ class PowerGraph():
             ax.annotate(upper_limit, (upper_limit, y_upperlimit),
                         verticalalignment='bottom',horizontalalignment='right')
 
+
         #draw the percentage of peak power the underfill covers
         #nudge percentile upwards, drop ratio a little relative to ymid
         x = (lower_limit + upper_limit)/2
@@ -134,6 +135,8 @@ class PowerGraph():
         ax.set_xticks(xticks)
         ax.set_xticklabels(xticklabels)
 
+        fig.text(0.99, 0.01, f'Derived revlimit: {revlimit:.0f}', ha='right')
+        
         #reapply the axis limits and force respected rev limit as max
         ax.set_xlim(xmin, final_rpm)
         ax.set_ylim(ymin, ymax)
