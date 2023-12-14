@@ -101,11 +101,11 @@ def derive_gearratio(fdp):
         rad = -rad
     return 2 * math.pi * rpm / (rad * 60)
 
-def calculate_shiftrpm(rpm, power, ratio):
-    intersects = intersect.intersection(rpm, power, rpm*ratio, power)[0]
+def calculate_shiftrpm(rpm, power, relratio):
+    intersects = intersect.intersection(rpm, power, rpm*relratio, power)[0]
     shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
-    print(f"shift rpm {shiftrpm:.0f}, drop to {shiftrpm/ratio:.0f}, "
-          f"drop is {shiftrpm*(1.0 - 1.0/ratio):.0f}")
+    print(f"shift rpm {shiftrpm:.0f}, drop to {shiftrpm/relratio:.0f}, "
+          f"drop is {shiftrpm*(1.0 - 1.0/relratio):.0f}")
 
     if len(intersects) > 1:
         print("Warning: multiple intersects found: graph may be noisy")
