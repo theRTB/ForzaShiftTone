@@ -292,11 +292,6 @@ class ForzaBeep():
         if not self.runcollector.is_run_completed():
             return
 
-        if config.notification_power_enabled and self.curve is None:
-            multi_beep(config.notification_file,
-                       config.notification_power_count,
-                       config.notification_power_delay)
-
         newrun_better = (self.curve is not None and
                          self.runcollector.is_newrun_better(self.curve))
 
@@ -307,6 +302,10 @@ class ForzaBeep():
             self.buttongraph.enable()
             self.revlimit_entry.configure(
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
+            if config.notification_power_enabled:
+                multi_beep(config.notification_file,
+                           config.notification_power_count,
+                           config.notification_power_delay)
         if newrun_better: #force recalculation of rpm if possible
             self.gears.newrun_decrease_state()
             
@@ -314,6 +313,12 @@ class ForzaBeep():
             self.runcollector.set_run_final()
         else:
             self.runcollector.reset()
+
+    def loop_update_gear(self, fdp):
+        if self.gears.update(fdp) and config.notification_gear_enabled:
+            multi_beep(config.notification_file,
+                       config.notification_gear_count,
+                       config.notification_gear_delay)
 
     def loop_calculate_shiftrpms(self):
         if self.curve is None:
@@ -411,7 +416,7 @@ class ForzaBeep():
         self.loop_hysteresis(fdp) #update self.rpm_hysteresis
         self.lookahead.add(self.rpm_hysteresis) #update linear regresion
         self.loop_runcollector(fdp) #add data point for curve collecting
-        self.gears.update_of(gear, fdp) #update gear ratio and state of gear
+        self.loop_update_gear(fdp) #update gear ratio and state of gear
         self.loop_calculate_shiftrpms() #derive shift
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp) #test if we need to beep

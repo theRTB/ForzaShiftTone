@@ -5,9 +5,12 @@ Created on Wed Sep 13 10:23:57 2023
 @author: RTB
 """
 
+import math
 import time
 import winsound
 import itertools as it
+import intersect
+
 from config import config
 
 #modified from stackoverflow code, limited how far the algorithm looks ahead
@@ -66,7 +69,48 @@ def beep(filename=config.sound_file):
                            winsound.SND_NODEFAULT)
     except:
         print("Sound failed to play")
-        
+
+#drivetrain enum for fdp
+DRIVETRAIN_FWD = 0
+DRIVETRAIN_RWD = 1
+DRIVETRAIN_AWD = 2
+
+#if the clutch is engaged, we can use engine rpm and wheel rotation speed
+#to derive the ratio between these two: the drivetrain ratio
+#AWD only considers rear tires due to complicating factors if front/rear are of
+#different sizes, as well as different slip ratios
+#since we are ultimately only interested in relative ratios, the fact that the
+#derived drivetrain ratio is not 100% correct for AWD is not that important.
+def derive_gearratio(fdp):
+    rpm = fdp.current_engine_rpm
+    if abs(fdp.speed) < 3 or rpm == 0: #if speed below 3 m/s assume faulty data
+        return None
+
+    rad = 0
+    if fdp.drivetrain_type == DRIVETRAIN_FWD:
+        rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR) / 2.0
+    elif fdp.drivetrain_type == DRIVETRAIN_RWD:
+        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
+    else:  #AWD
+        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
+        # rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR +
+        #     fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 4.0
+    if abs(rad) <= 1e-6:
+        return None
+    if rad < 0: #in the case of reverse
+        rad = -rad
+    return 2 * math.pi * rpm / (rad * 60)
+
+def calculate_shiftrpm(rpm, power, ratio):
+    intersects = intersect.intersection(rpm, power, rpm*ratio, power)[0]
+    shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
+    print(f"shift rpm {shiftrpm:.0f}, drop to {shiftrpm/ratio:.0f}, "
+          f"drop is {shiftrpm*(1.0 - 1.0/ratio):.0f}")
+
+    if len(intersects) > 1:
+        print("Warning: multiple intersects found: graph may be noisy")
+    return shiftrpm
+
 #convert a packet rate of 60hz to integer milliseconds
 def packets_to_ms(val):
     return int(1000*val/60)

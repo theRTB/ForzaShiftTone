@@ -9,19 +9,11 @@ import statistics
 from collections import deque
 
 from mttkinter import mtTkinter as tkinter
-import intersect
 
-#import assumes config.load_from has already been called
-from config import config
-from utility import multi_beep
+from utility import derive_gearratio, calculate_shiftrpm
 
-#Forza Horizon 5 is limited to 10 gears (ignoring reverse)
+#The Forza series is limited to 10 gears (ignoring reverse)
 MAXGEARS = 10
-
-#drivetrain enum for fdp
-DRIVETRAIN_FWD = 0
-DRIVETRAIN_RWD = 1
-DRIVETRAIN_AWD = 2
 
 #Enumlike class
 class GearState():
@@ -92,7 +84,6 @@ class Gear():
         self.ratio = 0
         self.relratio = 0
         self.variance = math.inf
-        self.var_bound = self.VAR_BOUNDS[DRIVETRAIN_RWD]
 
     def reset(self):
         self.state.reset()
@@ -101,7 +92,6 @@ class Gear():
         self.set_ratio(0)
         self.set_relratio(0)
         self.set_variance(math.inf)
-        self.var_bound = self.VAR_BOUNDS[DRIVETRAIN_RWD]
 
     def get_shiftrpm(self):
         return self.shiftrpm
@@ -136,6 +126,7 @@ class Gear():
     def to_next_state(self):
         self.state.to_next()
 
+    #return True if we should play gear beep
     def update(self, fdp):
         if self.state.at_initial():
             self.to_next_state()
@@ -151,21 +142,15 @@ class Gear():
             return
 
         median = statistics.median(self.ratio_deque)
-        var = statistics.variance(self.ratio_deque)
+        variance = statistics.variance(self.ratio_deque)
         self.set_ratio(median)
-        self.set_variance(var)
+        self.set_variance(variance)
 
-        if self.var_bound is None:
-            self.var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
-
-        if (self.variance < self.var_bound and
+        if (self.variance < self.VAR_BOUNDS[fdp.drivetrain_type] and
                 len(self.ratio_deque) >= self.DEQUE_MIN):
             self.to_next_state() #implied from reached to locked
-            print(f'LOCKED {self.gear}')
-            if config.notification_gear_enabled:
-                multi_beep(config.notification_file,
-                           config.notification_gear_count,
-                           config.notification_gear_delay)
+            print(f'LOCKED {self.gear}: {median:.3f}')
+            return True
 
     def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
@@ -203,8 +188,11 @@ class Gears():
             return self.gears[int(gear)].get_shiftrpm()
         return -1
 
-    def update_of(self, gear, fdp):
-        self.gears[gear].update(fdp)
+    #call update function of current gear in fdp
+    #return True if gear has locked and therefore double beep
+    def update(self, fdp):
+        gear = int(fdp.gear)
+        return self.gears[gear].update(fdp)
 
 #class for GUI display of class Gear
 #In the GUI the entry for variance is gridded over shiftrpm until shiftrpm
@@ -232,6 +220,7 @@ class GUIGear (Gear):
                              dict(zip(['fg', 'readonlybackground'], t2)))
 
     def __init__(self, number):
+        self.var_bound = None
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
         self.relratio_var = tkinter.StringVar()
@@ -268,6 +257,7 @@ class GUIGear (Gear):
 
     def reset(self):
         super().reset()
+        self.var_bound = None
         self.update_entry_colors()
         self.variance_entry.grid()
 
@@ -285,7 +275,8 @@ class GUIGear (Gear):
 
     def set_variance(self, val):
         super().set_variance(val)
-        factor = math.log(val) / math.log(self.var_bound)
+        base = self.var_bound if self.var_bound is not None else 1e-4
+        factor = math.log(val, base)
         factor = min(max(factor, 0), 1)
         self.variance_var.set(f'{factor:.0%}')
 
@@ -301,6 +292,11 @@ class GUIGear (Gear):
         self.update_entry_colors()
         if self.state.at_final():
             self.variance_entry.grid_remove()
+
+    def update(self, fdp):
+        if self.var_bound is None:
+            self.var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
+        return super().update(fdp)
 
     def toggle_ratio_display(self):
         if self.ratio_entry.winfo_viewable():
@@ -341,35 +337,3 @@ class GUIGears(Gears):
             self.ratio_var.set('Rel. Ratio')
         for gear in self.gears[1:]:
             gear.toggle_ratio_display()
-
-#if the clutch is engaged, we can use engine rpm and wheel rotation speed
-#to derive the ratio between these two: the gear ratio
-def derive_gearratio(fdp):
-    rpm = fdp.current_engine_rpm
-    if abs(fdp.speed) < 3 or rpm == 0: #if speed below 3 m/s assume faulty data
-        return None
-
-    rad = 0
-    if fdp.drivetrain_type == DRIVETRAIN_FWD:
-        rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR) / 2.0
-    elif fdp.drivetrain_type == DRIVETRAIN_RWD:
-        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
-    else:  #AWD
-        rad = (fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 2.0
-        # rad = (fdp.wheel_rotation_speed_FL + fdp.wheel_rotation_speed_FR +
-        #     fdp.wheel_rotation_speed_RL + fdp.wheel_rotation_speed_RR) / 4.0
-    if abs(rad) <= 1e-6:
-        return None
-    if rad < 0: #in the case of reverse
-        rad = -rad
-    return 2 * math.pi * rpm / (rad * 60)
-
-def calculate_shiftrpm(rpm, power, ratio):
-    intersects = intersect.intersection(rpm, power, rpm*ratio, power)[0]
-    shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
-    print(f"shift rpm {shiftrpm:.0f}, drop to {shiftrpm/ratio:.0f}, "
-          f"drop is {shiftrpm*(1.0 - 1.0/ratio):.0f}")
-
-    if len(intersects) > 1:
-        print("Warning: multiple intersects found: graph may be noisy")
-    return shiftrpm
