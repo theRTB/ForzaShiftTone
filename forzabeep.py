@@ -304,6 +304,7 @@ class ForzaBeep():
                                 readonlybackground=self.REVLIMIT_BG_CURVE)
             if config.notification_power_enabled:
                 multi_beep(config.notification_file,
+                           config.notification_file_duration,
                            config.notification_power_count,
                            config.notification_power_delay)
         if newrun_better: #force recalculation of rpm if possible
@@ -317,6 +318,7 @@ class ForzaBeep():
     def loop_update_gear(self, fdp):
         if self.gears.update(fdp) and config.notification_gear_enabled:
             multi_beep(config.notification_file,
+                       config.notification_file_duration,
                        config.notification_gear_count,
                        config.notification_gear_delay)
 

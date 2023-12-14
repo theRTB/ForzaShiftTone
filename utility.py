@@ -11,6 +11,8 @@ import winsound
 import itertools as it
 import intersect
 
+from threading import Timer
+
 from config import config
 
 #modified from stackoverflow code, limited how far the algorithm looks ahead
@@ -51,25 +53,18 @@ def deloop_and_sort(array, key_x, key_y, key_sort, max_loop=50):
 def round_to(val, n):
     return round(val/n)*n
 
-#multibeep has a simple sleep in it, which will freeze the UI if called
-#we could probably throw this function into the ThreadPool at the cost of
-#consistency
-def multi_beep(filename=config.sound_file, count=2, delay=0.1):
-    winsound.PlaySound(filename,
-                       winsound.SND_FILENAME | winsound.SND_NODEFAULT)
-    for number in range(count-1):
-        time.sleep(delay)
-        winsound.PlaySound(filename,
-                           winsound.SND_FILENAME | winsound.SND_NODEFAULT)
- 
 def beep(filename=config.sound_file):
     try:
-        winsound.PlaySound(filename,
-                           winsound.SND_FILENAME | winsound.SND_ASYNC |
-                           winsound.SND_NODEFAULT)
+        winsound.PlaySound(filename, (winsound.SND_FILENAME | 
+                           winsound.SND_ASYNC | winsound.SND_NODEFAULT))
     except:
-        print("Sound failed to play")
+        print(f"Sound failed to play: {filename}")
 
+def multi_beep(filename=config.sound_file, duration=0.1, count=2, delay=0.1):
+    for number in range(count):
+        t = Timer(number*(duration+delay), lambda: beep(filename))
+        t.start()
+        
 #drivetrain enum for fdp
 DRIVETRAIN_FWD = 0
 DRIVETRAIN_RWD = 1
