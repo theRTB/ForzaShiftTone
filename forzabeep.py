@@ -478,14 +478,20 @@ class ForzaBeep():
 
         return from_gear or revlimit_pct or revlimit_time
 
+    #write all GUI configurable settings to the config file
+    def config_writeback(self):
+        try:
+            gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
+                        'hysteresis_percent', 'volume']
+            for variable in gui_vars:
+                setattr(config, variable, getattr(self, variable).get())
+            config.write_to(FILENAME_SETTINGS)
+        except:
+            print("Failed to write GUI variables to config file")
+
     def close(self):
         self.loop.loop_close()
-        #write all GUI configurable settings to the config file
-        gui_vars = ['revlimit_percent', 'revlimit_offset', 'tone_offset',
-                    'hysteresis_percent', 'volume']
-        for variable in gui_vars:
-            setattr(config, variable, getattr(self, variable).get())
-        config.write_to(FILENAME_SETTINGS)
+        self.config_writeback()
         self.root.destroy()
 
 def main():
