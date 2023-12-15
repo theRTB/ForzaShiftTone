@@ -4,16 +4,9 @@ Created on Wed Sep 13 10:23:57 2023
 
 @author: RTB
 """
+#A collection of various utility functions for the rest of the files
 
-import math
-import time
-import winsound
-import itertools as it
-import intersect
 
-from threading import Timer
-
-from config import config
 
 #modified from stackoverflow code, limited how far the algorithm looks ahead
 #a single run of a power/rpm curve tends to have oscillations, where the power
@@ -32,11 +25,12 @@ def intersection(x1,x2,x3,x4,y1,y2,y3,y4):
             xs >= min(x3,x4) and xs <= max(x3,x4)):
             return xs, ys
 
+import itertools as it
 def get_loops(x, y, max_loop=50):
     ind = list(it.repeat(1, len(x)))
     i = 0
     while i < len(x) - 2:
-        for j in range(i+2, min(len(x) - 2, i+max_loop)):
+        for j in range(i + 2, min(len(x) - 2, i + max_loop)):
             if intersection(x[i],x[i+1],x[j],x[j+1], y[i],y[i+1],y[j],y[j+1]):
                 ind[i+1:j+1] = it.repeat(0, j-i)
                 i = j #skip ahead
@@ -53,6 +47,11 @@ def deloop_and_sort(array, key_x, key_y, key_sort, max_loop=50):
 def round_to(val, n):
     return round(val/n)*n
 
+
+
+import winsound
+from config import config
+
 def beep(filename=config.sound_file):
     try:
         winsound.PlaySound(filename, (winsound.SND_FILENAME | 
@@ -60,11 +59,15 @@ def beep(filename=config.sound_file):
     except:
         print(f"Sound failed to play: {filename}")
 
+from threading import Timer
 def multi_beep(filename=config.sound_file, duration=0.1, count=2, delay=0.1):
     for number in range(count):
         t = Timer(number*(duration+delay), lambda: beep(filename))
         t.start()
-        
+
+
+
+import math
 #drivetrain enum for fdp
 DRIVETRAIN_FWD = 0
 DRIVETRAIN_RWD = 1
@@ -96,6 +99,16 @@ def derive_gearratio(fdp):
         rad = -rad
     return 2 * math.pi * rpm / (rad * 60)
 
+
+
+import intersect
+#determine shift rpm by finding the intersection point of two power curves:
+# one as is, the other multiplied by the relative ratio of the two consecutive
+# gears. The second is how much longer the next gear is relatively.
+#intersect.intersections gives a tuple where the first value is an array of
+#point on the x-axis where intersection occurs, the second is the y-axis
+#we are only interested in the x-axis and we assume the last intersection is
+#the most accurate one.
 def calculate_shiftrpm(rpm, power, relratio):
     intersects = intersect.intersection(rpm, power, rpm*relratio, power)[0]
     shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
@@ -104,7 +117,10 @@ def calculate_shiftrpm(rpm, power, relratio):
 
     if len(intersects) > 1:
         print("Warning: multiple intersects found: graph may be noisy")
+
     return shiftrpm
+
+
 
 #convert a packet rate of 60hz to integer milliseconds
 def packets_to_ms(val):
