@@ -281,6 +281,21 @@ class ForzaBeep():
         if abs(rpm - self.rpm_hysteresis) >= hysteresis:
             self.rpm_hysteresis = rpm
 
+    def loop_setcurve(self, newrun_better):
+        self.curve = Curve(self.runcollector.get_run())
+        self.set_revlimit(self.curve.get_revlimit())
+        self.set_peak_power()
+        self.buttongraph.enable()
+        self.revlimit_entry.configure(
+                            readonlybackground=self.REVLIMIT_BG_CURVE)
+        if config.notification_power_enabled:
+            multi_beep(config.notification_file,
+                       config.notification_file_duration,
+                       config.notification_power_count,
+                       config.notification_power_delay)
+        if newrun_better: #force recalculation of rpm if possible
+            self.gears.newrun_decrease_state()
+
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
     #test if this leads to a more accurate run with a better rev limit defined
@@ -296,19 +311,7 @@ class ForzaBeep():
                          self.runcollector.is_newrun_better(self.curve))
 
         if self.curve is None or newrun_better:
-            self.curve = Curve(self.runcollector.get_run())
-            self.set_revlimit(self.curve.get_revlimit())
-            self.set_peak_power()
-            self.buttongraph.enable()
-            self.revlimit_entry.configure(
-                                readonlybackground=self.REVLIMIT_BG_CURVE)
-            if config.notification_power_enabled:
-                multi_beep(config.notification_file,
-                           config.notification_file_duration,
-                           config.notification_power_count,
-                           config.notification_power_delay)
-        if newrun_better: #force recalculation of rpm if possible
-            self.gears.newrun_decrease_state()
+            self.loop_setcurve(newrun_better)
             
         if self.runcollector.is_run_final():
             self.runcollector.set_run_final()
