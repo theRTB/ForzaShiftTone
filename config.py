@@ -80,6 +80,9 @@ class config():
     
     #draw underfill of >=x% of peak power in the power graph
     graph_power_percentile = 0.9
+    
+    revlimit_round = 50
+    revlimit_round_offset = 10
         
     @classmethod
     def get_dict(cls):
