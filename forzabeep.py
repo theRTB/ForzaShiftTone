@@ -30,7 +30,7 @@ from curve import Curve
 from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
-from utility import beep, multi_beep, packets_to_ms
+from utility import beep, multi_beep, packets_to_ms, round_to
 from buttongraph import ButtonGraph
 from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_RevlimitOffset,
@@ -199,12 +199,9 @@ class ForzaBeep():
     def set_peak_power(self):
         if self.curve is None:
             return
-        index = self.curve.get_peakpower_index()
-        power = self.curve.power[index]
-        power = int(round(power/1000, 0)) #W -> kW, round to whole
-        rpm = self.curve.rpm[index]
-        rpm = int(round(rpm/50, 0)*50) #round to nearest 50
-        self.peakpower.set(f'~{power:>4} kW at ~{rpm:>5} RPM')
+        rpm, peakpower = self.curve.get_peakpower_tuple()
+        string = f'~{peakpower/1000:>4.0f} kW at ~{round_to(rpm, 50):>5} RPM'
+        self.peakpower.set(string)
                                    
     def edit_handler(self):
         varlist = [self.revlimit_offset, self.revlimit_percent,

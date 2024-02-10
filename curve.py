@@ -48,6 +48,7 @@ class Curve ():
             while self.rpm[-2] >= revlimit:
                 del self.rpm[-1]
             self.rpm[-1] = revlimit
+            print(f'revlimit {revlimit}')
         else: #case rpm is below assumed revlimit
             print("Curve below")
             #we add a new point with linear extrapolation to revlimit
@@ -64,8 +65,12 @@ class Curve ():
     def get_gear(self):
         return self.gear
     
-    def get_peakpower_index(self):
-        return np.argmax(np.round(self.power, 1))
+    #get peak power according to peak power rounded to 0.1kW
+    #the rounding is necessary to avoid some randomness in collecting a curve
+    def get_peakpower_tuple(self, decimals=-2):
+        power_rounded = np.round(self.power, decimals) #100W -> 0.1kW accuracy
+        index = np.argmax(power_rounded)
+        return (self.rpm[index], max(power_rounded))
     
     def get_revlimit(self):
         return self.rpm[-1]
