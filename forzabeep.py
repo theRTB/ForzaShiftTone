@@ -37,6 +37,48 @@ from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
                           GUIConfigVariable_ToneOffset,
                           GUIConfigVariable_HysteresisPercent)
 
+#general purpose variable class
+class Variable(object):
+    def __init__(self, defaultvalue, *args, **kwargs):
+        self.value = defaultvalue
+        self.defaultvalue = defaultvalue
+
+    def get(self):
+        return self.value
+
+    def set(self, value):
+        self.value = value
+    
+    def reset(self):
+        self.value = self.defaultvalue
+
+class GUIRevlimit(Variable):
+    def __init__(self, root, defaultguivalue, row, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.defaultguivalue = defaultguivalue
+        self.tkvar = tkinter.StringVar(value=defaultguivalue)
+        
+        self.label = tkinter.Label(root, text='Revlimit')        
+        self.entry = tkinter.Entry(root, width=6, textvariable=self.tkvar,
+                                   justify=tkinter.RIGHT, state='readonly')
+        self.unit = tkinter.Label(root, text='RPM')
+    
+    def grid(self, column, sticky='', *args, **kwargs):
+        self.label.grid(column=column, sticky=tkinter.E, *args, **kwargs)
+        self.entry.grid(column=column+1, sticky=sticky, *args, **kwargs)
+        self.unit.grid(column=column+2, sticky=tkinter.W, *args, **kwargs)
+        
+    def set(self, value):
+        super().set(value)
+        self.tkvar.set(value)
+    
+    def configure(self, *args, **kwargs):
+        self.entry.configure(*args, **kwargs)
+        
+    def reset(self):
+        super().reset()
+        self.tkvar.set(self.defaultguivalue)
+
 #main class for ForzaShiftTone
 #it is responsible for creating and managing the tkinter window
 #and maintains the loop logic
@@ -89,7 +131,7 @@ class ForzaBeep():
         self.we_beeped = 0
         self.beep_counter = 0
         self.debug_target_rpm = -1
-        self.revlimit = -1
+        self.revlimit = Variable(defaultvalue=-1)
         self.rpm_hysteresis = 0
         
         self.curve = None
@@ -122,20 +164,14 @@ class ForzaBeep():
         self.edit_handler()
 
     def __init__window(self):
+        root = self.root
         self.gears.init_window(self.root)
 
         row = GUIGears.ROW_COUNT #start from row below gear display
 
-        self.revlimit_var = tkinter.StringVar(value=self.DEFAULT_GUI_VALUE)
-        tkinter.Label(self.root, text='Revlimit').grid(row=row, column=0,
-                                                       sticky=tkinter.E)
-        self.revlimit_entry = tkinter.Entry(self.root, width=6,
-                                            state='readonly',
-                                            justify=tkinter.RIGHT,
-                                            textvariable=self.revlimit_var)
-        self.revlimit_entry.grid(row=row, column=1)
-        tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
-                                                  sticky=tkinter.W)
+        self.revlimit = GUIRevlimit(root, defaultvalue=-1, row=row,
+                                     defaultguivalue=self.DEFAULT_GUI_VALUE)
+        self.revlimit.grid(row=row, column=0)
 
         self.__init__window_buffers_frame(row)
         
@@ -227,8 +263,7 @@ class ForzaBeep():
 
         self.rpm.set(0)
         self.update_rpm = True
-        self.revlimit = -1
-        self.revlimit_var.set(self.DEFAULT_GUI_VALUE)
+        self.revlimit.reset()
         self.peakpower.set('')
         self.buttongraph.reset()
 
@@ -236,16 +271,9 @@ class ForzaBeep():
         self.tone_offset.reset_counter()
         self.rpm_hysteresis = 0
 
-        self.revlimit_entry.configure(readonlybackground=self.REVLIMIT_BG_NA)
+        self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_NA)
 
         self.gears.reset()
-
-    def get_revlimit(self):
-        return self.revlimit
-
-    def set_revlimit(self, val):
-        self.revlimit = int(val)
-        self.revlimit_var.set(self.revlimit)
 
     def loop_update_rpm(self, fdp):
         if self.update_rpm:
@@ -266,11 +294,10 @@ class ForzaBeep():
             print(f'Engine: {fdp.engine_idle_rpm:.0f} min rpm, {fdp.engine_max_rpm:.0f} max rpm')
 
     def loop_guess_revlimit(self, fdp):
-        if self.get_revlimit() == -1 and config.revlimit_guess != -1:
-            self.set_revlimit(fdp.engine_max_rpm - config.revlimit_guess)
-            self.revlimit_entry.configure(
-                                    readonlybackground=self.REVLIMIT_BG_GUESS)
-            print(f'guess revlimit: {self.get_revlimit()}')    
+        if config.revlimit_guess != -1 and self.revlimit.get() == -1:
+            self.revlimit.set(fdp.engine_max_rpm - config.revlimit_guess)
+            self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_GUESS)
+            print(f'guess revlimit: {self.revlimit.get()}')    
 
     def loop_hysteresis(self, fdp):
         rpm = fdp.current_engine_rpm
@@ -280,11 +307,10 @@ class ForzaBeep():
 
     def loop_setcurve(self, newrun_better):
         self.curve = Curve(self.runcollector.get_run())
-        self.set_revlimit(self.curve.get_revlimit())
+        self.revlimit.set(self.curve.get_revlimit())
         self.set_peak_power()
         self.buttongraph.enable()
-        self.revlimit_entry.configure(
-                            readonlybackground=self.REVLIMIT_BG_CURVE)
+        self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_CURVE)
         if config.notification_power_enabled:
             multi_beep(config.notification_file,
                        config.notification_file_duration,
@@ -385,7 +411,7 @@ class ForzaBeep():
         rpm = fdp.current_engine_rpm
         beep_rpm = self.gears.get_shiftrpm_of(fdp.gear)
         if self.beep_counter <= 0:
-            if self.test_for_beep(beep_rpm, self.get_revlimit(), fdp):
+            if self.test_for_beep(beep_rpm, fdp):
                 self.beep_counter = config.beep_counter_max
                 self.we_beeped = config.we_beep_max
                 self.tone_offset.start_counter()
@@ -446,10 +472,11 @@ class ForzaBeep():
         else:
             self.debug_target_rpm = min(self.debug_target_rpm, val)
 
-    def test_for_beep(self, shiftrpm, revlimit, fdp):
+    def test_for_beep(self, shiftrpm, fdp):
         if fdp.accel < config.min_throttle_for_beep:
             return False
         tone_offset = self.tone_offset.get()
+        revlimit = self.revlimit.get()
 
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
