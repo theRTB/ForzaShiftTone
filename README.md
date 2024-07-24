@@ -2,6 +2,8 @@
 
 **Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
+**Shift detection in Forza Motorsport 8 was broken by a recent patch. Dynamic Tone Offset is probably not going to work right.**
+
 ![example v0.78 BMW M5 2018](images/sample-BMW-M5-2018-15-1.png)
 
 ## TL;DR
