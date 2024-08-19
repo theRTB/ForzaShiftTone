@@ -11,9 +11,9 @@ from collections import deque
 #class that maintains a deque used for linear regression. This smooths the rpms
 #and provides a slope to predict future RPM values.
 class Lookahead():
-    def __init__(self, minlen, maxlen):
-        self.minlen = minlen
-        self.deque = deque(maxlen=maxlen)
+    def __init__(self, config):
+        self.minlen = config.linreg_len_min
+        self.deque = deque(maxlen=config.linreg_len_max)
         self.clear_linreg_vars()
 
     def add(self, rpm):

@@ -22,7 +22,9 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,
 
 from utility import round_to
 
-#given a curve (class with rpm and power numpy arrays at minimum):
+from base.enginecurve import EngineCurve
+
+# given a curve (class with rpm and power numpy arrays at minimum):
 # draw a power graph with respected revlimit based revlimit_percent and
 # underfill based on power equal or higher than power_percentile
 # extra arguments are passed to the created figure if fig is None
@@ -42,12 +44,13 @@ class PowerGraph():
         revlimit = round_rpm(curve.rpm[-1])
         curve_filter = curve.rpm <= revlimit_percent*revlimit
         rpm = curve.rpm[curve_filter]
-        power = curve.power[curve_filter] / 1000 #W -> kW
+        power = curve.power[curve_filter]
+        power = power / max(power) * 100 #convert to percentage
 
         ax.plot(rpm, power)
         ax.grid()
         ax.set_xlabel("rpm")#, labelpad=-10)
-        ax.set_ylabel("power (kW)")
+        ax.set_ylabel("power (% of peak)")
 
         #get axis limits to force limits later, annotating moves some of these
         xmin, xmax = ax.get_xlim()
@@ -72,19 +75,19 @@ class PowerGraph():
         final_power_label = f'{final_power:4.{1 if final_power < 100 else 0}f}'
 
         #override x,y point display in toolbar
-        ax.format_coord = lambda x,y: f'{x:>5.0f} rpm: {y:>4.1f} kW ({y/peak_power:>4.1%})'
+        ax.format_coord = lambda x,y: f'{x:>5.0f} rpm: {y/peak_power:>4.1%} of peak'
 
         ypeak = peak_power*.90
         #emphasize location of peak power with dotted lines
-        ax.hlines(peak_power, peak_power_rpm*.90, final_rpm,
-                  linestyle='dotted')
+        # ax.hlines(peak_power, peak_power_rpm*.90, final_rpm,
+        #           linestyle='dotted')
         ax.vlines(peak_power_rpm, ypeak, ymax, linestyle='dotted')
 
         #annotate peak power, and power at respected revlimit
         ax.annotate(final_power_label, (final_rpm, final_power),
                     verticalalignment='top', horizontalalignment='left')
-        ax.annotate(peak_power_label, (final_rpm, peak_power),
-                    verticalalignment='center')
+        # ax.annotate(peak_power_label, (final_rpm, peak_power),
+        #             verticalalignment='center')
         ax.annotate(int(peak_power_rpm), (peak_power_rpm, ypeak),
                     verticalalignment='top', horizontalalignment='center')
 
@@ -98,6 +101,8 @@ class PowerGraph():
         ymid = (ymin + peak_power) / 2
 
         #display a double arrow'd line for the visual width of the underfill
+        #TODO: consider single arrow from center and annotate below and above 
+        #center point
         ax.annotate(text='', xy=(lower_limit,ymid), xytext=(upper_limit,ymid),
                     arrowprops=dict(arrowstyle='<->',shrinkA=0, shrinkB=0))
 
@@ -109,7 +114,6 @@ class PowerGraph():
             y_upperlimit = ymin + 0.05 * (peak_power - ymin)
             ax.annotate(upper_limit, (upper_limit, y_upperlimit),
                         verticalalignment='bottom',horizontalalignment='right')
-
 
         #draw the percentage of peak power the underfill covers
         #nudge percentile upwards, drop ratio a little relative to ymid
@@ -165,10 +169,10 @@ class NavigationToolbar(NavigationToolbar2Tk):
 
 #class responsible for creating a tkinter window for the power graph
 class PowerWindow():
-    TITLE = "ForzaShiftTone: Power graph"
+    TITLE = "GTShiftTone: Power graph"
 
     #target width and height of the graph, not the window
-    WIDTH, HEIGHT= 750, 500
+    WIDTH, HEIGHT= 815, 500
     FIGURE_DPI = 72
 
     #round various RPM values to nearest value of ROUND
@@ -185,8 +189,9 @@ class PowerWindow():
     #Get x and y coordinates to place graph underneath the main window.
     #This may not scale arbitrarily with varying border sizes and title sizes
     def get_windowoffsets(self):
-        return (self.root.winfo_x(),  #why not rootx?
-                self.root.winfo_rooty() + self.root.winfo_height())
+        root = self.root.winfo_toplevel() #get true toplevel widget
+        return (root.winfo_x(),  #why not rootx?
+                root.winfo_rooty() + root.winfo_height())
 
     #100% scaling is 96 dpi in Windows, matplotlib defaults to 72 dpi
     #window_scalar allows the user to scale the window up or down
@@ -203,8 +208,10 @@ class PowerWindow():
     #percentage of revlimit
     #window size is explicitly not set: the pyplot will otherwise not scale
     #properly when resizing the window
-    def open(self, curve, revlimit_percent):
-        if self.window is not None:
+    def open(self, curve, revlimit_percent, carname):
+        if self.window is not None: #force existing window to front
+            self.window.deiconify()
+            self.window.lift()
             return
         self.window = tkinter.Toplevel(self.root)
         self.window.title(self.TITLE)
@@ -227,7 +234,7 @@ class PowerWindow():
         #this is manual entry, automating is possible but very time consuming
         #the carname is added as title when saving the figure
         frame = tkinter.Frame(self.window)
-        carname_var = tkinter.StringVar(value='')
+        carname_var = tkinter.StringVar(value=carname)
         tkinter.Label(frame, text='Car:').pack(side=tkinter.LEFT)
         car_entry = tkinter.Entry(frame, textvariable=carname_var)
         
@@ -245,13 +252,14 @@ class PowerWindow():
 #class responsible for handling a tkinter button in the gui to display the
 #power graph when it has been collected. The button is disabled until the user
 #has collected a curve.
-class GUIButtonGraph():
-    TITLE = "ForzaShiftTone: Power graph"
+class GUIEngineCurve(EngineCurve):
+    TITLE = "GTShiftTone: Power graph"
     #target width and height of the graph not the window
-    WIDTH, HEIGHT= 745, 500
+    WIDTH, HEIGHT= 813, 500
     FIGURE_DPI = 72
 
     def __init__(self, root, handler, config):
+        super().__init__(config)
         self.root = root
 
         self.button = tkinter.Button(root, text='View\nPower\nGraph', 
@@ -259,7 +267,13 @@ class GUIButtonGraph():
                                      command=handler, state=tkinter.DISABLED)
         self.powerwindow = PowerWindow(root, config)
 
+    def update(self, gtdp, *args, **kwargs):
+        super().update(gtdp, *args, **kwargs)
+        if self.is_loaded():
+            self.enable()
+
     def reset(self):
+        super().reset()
         self.disable()
 
     #enable the button in the GUI
@@ -278,7 +292,7 @@ class GUIButtonGraph():
         self.button.grid(*args, **kwargs)
 
     #is called by graphbutton_handler in gui if there is a curve
-    def create_window(self, curve, revlimit_percent):
-        if curve is None:
-            return
-        self.powerwindow.open(curve, revlimit_percent)
+    #The window needs a curve with RPM, power, torque, revlimit% and carname
+    #awkward call because this object is now the curve itself
+    def create_window(self, revlimit_percent, carname):
+        self.powerwindow.open(self, revlimit_percent, carname)

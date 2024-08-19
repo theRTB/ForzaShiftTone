@@ -10,9 +10,7 @@ from os.path import exists
 FILENAME_SETTINGS = 'config.json'
 
 class config():
-    ip = ''
-    port = 12350
-    # packet_format = 'phased_out'
+    target_ip = ''
     
     sound_file = 'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
     sound_files = {100:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',
@@ -32,17 +30,19 @@ class config():
     volume = 75 #default volume
     
     window_scalar = 1 #scale window by this factor
+    window_x = None
+    window_y = None
     
     #initial revlimit = engine_limit - guess
-    #distance between revlimit and engine limit varies between 100 and 2000
-    #with the most common value at 500. 750 is the rough average.
-    #updated: disabled due to having little to no benefit
+    #distance between engine_limit and revlimit has not been investigated for
+    #GT7, so disabled due to having little to no benefit anyway
     revlimit_guess = -1
     
-    beep_counter_max = 30 #minimum number of frames between beeps = 0.33ms
+    beep_counter_max = 30 #minimum number of frames between beeps = 0.5ms
     beep_rpm_pct = 0.75 #counter resets below this percentage of beep rpm
     min_throttle_for_beep = 255 #only test if at or above throttle amount
 
+    dynamictoneoffset = 1 #1 is true, 0 is false
     tone_offset = 17 #if specified rpm predicted to be hit in x packets: beep
     tone_offset_lower =  9
     tone_offset_upper = 25
@@ -50,7 +50,7 @@ class config():
     
     revlimit_percent = 0.98 #respected rev limit for trigger revlimit as pct%
     revlimit_percent_lower = 0.900
-    revlimit_percent_upper = 0.998 #includes .998 due to floating point
+    revlimit_percent_upper = 0.999 #only meant to display the full graph
     
     revlimit_offset = 6 #additional buffer in x packets for revlimit
     revlimit_offset_lower = 3
@@ -81,8 +81,15 @@ class config():
     #draw underfill of >=x% of peak power in the power graph
     graph_power_percentile = 0.9
     
+    #TODO: are these still in use?
     revlimit_round = 50
     revlimit_round_offset = 10
+    
+    #round displayed shift RPM in GUI up to nearest x
+    shiftrpm_round = 25
+    
+    #determine if cars_on_track is considered or not when testing to skip loop
+    includereplay = False
         
     @classmethod
     def get_dict(cls):
