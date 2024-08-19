@@ -93,6 +93,9 @@ class Gear():
         self.set_relratio(0)
         self.set_variance(math.inf)
 
+    def get_gearnumber(self):
+        return self.gear
+
     def get_shiftrpm(self):
         return self.shiftrpm
 
@@ -219,14 +222,15 @@ class GUIGear (Gear):
         ENTRY_COLORS[key] = (dict(zip(['fg', 'readonlybackground'], t1)), 
                              dict(zip(['fg', 'readonlybackground'], t2)))
 
-    def __init__(self, number):
+    def __init__(self, number, root):
+        super().__init__(number)
         self.var_bound = None
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
         self.relratio_var = tkinter.StringVar()
         self.variance_var = tkinter.StringVar()
-        super().__init__(number)
-        super().reset()
+        self.init_window(root)
+        self.reset()
 
     def init_gui_entry(self, root, name, justify=tkinter.RIGHT):
         textvariable = getattr(self, f'{name}_var')
@@ -234,16 +238,18 @@ class GUIGear (Gear):
                               textvariable=textvariable, justify=justify)
         setattr(self, f'{name}_entry', entry)
 
-    #called by GUIGears
-    def init_window(self, root, number, column, starting_row=0):
-        self.label = tkinter.Label(root, text=f'{number}',
+    def init_window(self, root):
+        self.label = tkinter.Label(root, text=f'{self.get_gearnumber()}',
                                    width=self.ENTRY_WIDTH)
         for name in ['shiftrpm', 'ratio', 'variance']:
             self.init_gui_entry(root, name)
         self.init_gui_entry(root, 'relratio', justify=tkinter.CENTER)
 
+    def init_grid(self, column=None, starting_row=0):
+        if column is None:
+            column = self.get_gearnumber()
         self.label.grid(row=starting_row, column=column)
-        if number != MAXGEARS:
+        if self.get_gearnumber() != MAXGEARS:
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
             self.relratio_entry.grid(row=starting_row+2, column=column,
                                       columnspan=2)
@@ -252,8 +258,6 @@ class GUIGear (Gear):
         #let tkinter memorize grid location, then temporarily hide ratio entry
         self.ratio_entry.grid(row=starting_row+2, column=column)
         self.ratio_entry.grid_remove()
-
-        self.update_entry_colors()
 
     def reset(self):
         super().reset()
@@ -310,25 +314,28 @@ class GUIGear (Gear):
 class GUIGears(Gears):
     LABEL_WIDTH = 8
     ROW_COUNT = 3 #for ForzaBeep GUI: how many grid rows a gear takes up
-    def __init__(self):
-        self.gears = [None] + [GUIGear(g) for g in self.GEARLIST]
+    def __init__(self, root):
+        self.gears = [None] + [GUIGear(g, root) for g in self.GEARLIST]
+        
+        self.init_window(root)
 
-    #called by ForzaBeep
     def init_window(self, root):
-
-        tkinter.Label(root, text='Gear', anchor=tkinter.E,
-                      width=self.LABEL_WIDTH).grid(row=0, column=0)
-        tkinter.Label(root, text='Target', anchor=tkinter.E,
-                      width=self.LABEL_WIDTH).grid(row=1, column=0)
+        opts = {'anchor':tkinter.E, 'width':self.LABEL_WIDTH}
+        self.label_gear = tkinter.Label(root, text='Gear', **opts)
+        self.label_target = tkinter.Label(root, text='Target', **opts)
 
         self.ratio_var = tkinter.StringVar(value='Rel. Ratio')
-        label = tkinter.Label(root, textvariable=self.ratio_var,
-                              anchor=tkinter.E, width=self.LABEL_WIDTH)
-        label.grid(row=2, column=0)
-        label.bind('<Double-Button-1>', self.ratio_handler)
-
+        self.label_ratio = tkinter.Label(root, textvariable=self.ratio_var,
+                                         **opts)
+        self.label_ratio.bind('<Double-Button-1>', self.ratio_handler)
+        
+    def init_grid(self):
+        self.label_gear.grid(row=0, column=0)
+        self.label_target.grid(row=1, column=0)
+        self.label_ratio.grid(row=2, column=0)
+        
         for i, g in enumerate(self.gears[1:], start=1):
-            g.init_window(root, i, i)
+            g.init_grid()
 
     def ratio_handler(self, event=None):
         if self.ratio_var.get() == 'Rel. Ratio':

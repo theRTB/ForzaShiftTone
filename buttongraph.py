@@ -245,7 +245,7 @@ class PowerWindow():
 #class responsible for handling a tkinter button in the gui to display the
 #power graph when it has been collected. The button is disabled until the user
 #has collected a curve.
-class ButtonGraph():
+class GUIButtonGraph():
     TITLE = "ForzaShiftTone: Power graph"
     #target width and height of the graph not the window
     WIDTH, HEIGHT= 745, 500
@@ -254,7 +254,8 @@ class ButtonGraph():
     def __init__(self, root, handler, config):
         self.root = root
 
-        self.button = tkinter.Button(root, text='View\nGraphs', borderwidth=3,
+        self.button = tkinter.Button(root, text='View\nPower\nGraph', 
+                                     borderwidth=3,
                                      command=handler, state=tkinter.DISABLED)
         self.powerwindow = PowerWindow(root, config)
 
@@ -277,8 +278,7 @@ class ButtonGraph():
         self.button.grid(*args, **kwargs)
 
     #is called by graphbutton_handler in gui if there is a curve
-    def create_graphwindow(self, curve, revlimit_percent):
+    def create_window(self, curve, revlimit_percent):
         if curve is None:
             return
         self.powerwindow.open(curve, revlimit_percent)
-

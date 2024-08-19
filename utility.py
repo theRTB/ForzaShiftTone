@@ -6,7 +6,20 @@ Created on Wed Sep 13 10:23:57 2023
 """
 #A collection of various utility functions for the rest of the files
 
+#general purpose variable class
+class Variable(object):
+    def __init__(self, defaultvalue=None, *args, **kwargs):
+        self.value = defaultvalue
+        self.defaultvalue = defaultvalue
 
+    def get(self):
+        return self.value
+
+    def set(self, value):
+        self.value = value
+    
+    def reset(self):
+        self.value = self.defaultvalue
 
 #modified from stackoverflow code, limited how far the algorithm looks ahead
 #a single run of a power/rpm curve tends to have oscillations, where the power

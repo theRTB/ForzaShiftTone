@@ -21,7 +21,7 @@ class ForzaUDPLoop():
         self.packet_format = packet_format
         self.loop_func = loop_func
 
-    def loop_toggle(self, toggle=None):
+    def toggle(self, toggle=None):
         if toggle and not self.isRunning:
             def starting():
                 self.isRunning = True
@@ -52,7 +52,7 @@ class ForzaUDPLoop():
     def is_running(self):
         return self.isRunning
 
-    def loop_close(self):
+    def close(self):
         """close program
         """
         self.isRunning = False

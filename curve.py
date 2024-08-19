@@ -20,6 +20,8 @@ class Curve ():
     REVLIMIT_ROUND_OFFSET = 10
     def __init__(self, packets, config=None):
         self.gear = packets[0].gear
+        
+        #initialize to python arrays, as numpy arrays do not resize
         self.rpm = [p.current_engine_rpm for p in packets]
         self.power = [p.power for p in packets]
         self.torque = [p.torque for p in packets]
@@ -27,11 +29,12 @@ class Curve ():
     
         self.correct_final_point(config)
     
+        #convert to numpy array as possible resizing has been done
         for var in ['rpm', 'power', 'torque', 'boost']:
             setattr(self, var, np.array(getattr(self, var)))
     
-    #We move the rounding point by 10, so 
-    #0-15 is rounded down and 16-50 is rounded up instead of 25 as middle
+    #We move the rounding point by 5, so 
+    #0-5 is rounded down and 6-20 is rounded up instead of 12.5 as middle
     def correct_final_point(self, config):
         revlimit_round = getattr(config, 'revlimit_round', self.REVLIMIT_ROUND)
         revlimit_round_offset = getattr(config, 'revlimit_round_offset',
@@ -61,7 +64,6 @@ class Curve ():
                 array.append(ynew)
                 print(f'y1 {y1:.3f} y2 {y2:.3f} ynew {ynew:.3f}')
                 
-        
     def get_gear(self):
         return self.gear
     

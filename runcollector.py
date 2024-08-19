@@ -6,7 +6,6 @@ Created on Wed Aug  2 21:03:42 2023
 """
 
 from utility import deloop_and_sort
-from config import config
 
 #collects an array of packets at full throttle
 #if the user lets go of throttle, changes gear: reset
@@ -18,14 +17,16 @@ from config import config
 #   packet, we have a power curve that is complete enough to do shift rpm
 #   rpm calculations with it.
 class RunCollector():
-    MINLEN = config.runcollector_minlen
-    REMOVE_INITIAL = config.runcollector_remove_initial
-    LOWER_LIMIT_BOOST = config.runcollector_pct_lower_limit_boost
-    def __init__(self):
+    def __init__(self, config):
         self.run = []
         self.state = 'WAIT'
         self.prev_rpm = -1
         self.gear_collected = -1
+        
+        self.MINLEN = config.runcollector_minlen
+        self.MINLEN_LOCK = config.runcollector_minlen_lock
+        self.REMOVE_INITIAL = config.runcollector_remove_initial
+        self.LOWER_LIMIT_BOOST = config.runcollector_pct_lower_limit_boost
 
     def filter_run(self):
         if len(self.run) > self.REMOVE_INITIAL:
@@ -133,7 +134,7 @@ class RunCollector():
     #TODO: add more requirements to a locked run
     #minimum rpm: 2x idle rpm or so?
     def is_run_final(self):
-        if len(self.run) > config.runcollector_minlen_lock:
+        if len(self.run) > self.MINLEN_LOCK:
             print(f"Runcollector: Run is final, len {len(self.run)/60:.1f}s")
             return True
         return False

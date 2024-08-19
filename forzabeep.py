@@ -22,63 +22,20 @@ PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
 from config import config, FILENAME_SETTINGS
-#load configuration from config.json, class GUIConfigVariable depends on this
 config.load_from(FILENAME_SETTINGS)
 
-from gear import GUIGears, MAXGEARS
+from gear import Gears, GUIGears, MAXGEARS
 from curve import Curve
 from lookahead import Lookahead
 from forzaUDPloop import ForzaUDPLoop
 from runcollector import RunCollector
-from utility import beep, multi_beep, packets_to_ms, round_to
-from buttongraph import ButtonGraph
-from guiconfigvar import (GUIConfigVariable_RevlimitPercent,
-                          GUIConfigVariable_RevlimitOffset,
-                          GUIConfigVariable_ToneOffset,
-                          GUIConfigVariable_HysteresisPercent)
-
-#general purpose variable class
-class Variable(object):
-    def __init__(self, defaultvalue, *args, **kwargs):
-        self.value = defaultvalue
-        self.defaultvalue = defaultvalue
-
-    def get(self):
-        return self.value
-
-    def set(self, value):
-        self.value = value
-    
-    def reset(self):
-        self.value = self.defaultvalue
-
-class GUIRevlimit(Variable):
-    def __init__(self, root, defaultguivalue, row, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.defaultguivalue = defaultguivalue
-        self.tkvar = tkinter.StringVar(value=defaultguivalue)
+from utility import beep, multi_beep, packets_to_ms, Variable
+from buttongraph import GUIButtonGraph
+from guiconfigvar import (GUIRevlimitPercent, GUIRevlimitOffset, GUIToneOffset,
+                          GUIHysteresisPercent, GUIRevlimit, GUIVolume, 
+                          GUIPeakPower, GUITach, GUIButtonStartStop, 
+                          GUIButtonVarEdit)
         
-        self.label = tkinter.Label(root, text='Revlimit')        
-        self.entry = tkinter.Entry(root, width=6, textvariable=self.tkvar,
-                                   justify=tkinter.RIGHT, state='readonly')
-        self.unit = tkinter.Label(root, text='RPM')
-    
-    def grid(self, column, sticky='', *args, **kwargs):
-        self.label.grid(column=column, sticky=tkinter.E, *args, **kwargs)
-        self.entry.grid(column=column+1, sticky=sticky, *args, **kwargs)
-        self.unit.grid(column=column+2, sticky=tkinter.W, *args, **kwargs)
-        
-    def set(self, value):
-        super().set(value)
-        self.tkvar.set(value)
-    
-    def configure(self, *args, **kwargs):
-        self.entry.configure(*args, **kwargs)
-        
-    def reset(self):
-        super().reset()
-        self.tkvar.set(self.defaultguivalue)
-
 #main class for ForzaShiftTone
 #it is responsible for creating and managing the tkinter window
 #and maintains the loop logic
@@ -88,30 +45,25 @@ class ForzaBeep():
     TITLE = "ForzaShiftTone: Dynamic shift tone for the Forza series"
     WIDTH, HEIGHT = 750, 252
     
-    DEFAULT_GUI_VALUE = 'N/A'
-
-    REVLIMIT_BG_NA = '#F0F0F0'
-    REVLIMIT_BG_GUESS = '#FFFFFF'
-    REVLIMIT_BG_CURVE = '#CCDDCC'
-
     def __init__(self):
         self.loop = ForzaUDPLoop(ip=config.ip, port=config.port, 
                                  packet_format=None,
                                  loop_func=self.loop_func)
-        self.__init__tkinter()
-        self.__init__vars()
-        self.__init__window()
+        self.init_tkinter()
+        self.init_vars()
+        self.init_gui_vars()
+        self.init_gui_grid()
         
-        self.startstop_handler() #trigger start of loop
+        self.buttonstartstop.invoke() #trigger start of loop
         self.root.mainloop()
 
-    def __init__tkinter(self):
+    def init_tkinter(self):
         self.root = tkinter.Tk()
         self.root.title(self.TITLE)
         
-        #100% scaling is 96 dpi in Windows, tkinter assumes 72 dpi
+        #100% scaling is ~96 dpi in Windows, tkinter assumes ~72 dpi
         #window_scalar allows the user to scale the window up or down
-        #the UI was designed at 150% scaling or 144 dpi
+        #the UI was designed at 150% scaling or ~144 dpi
         #we have to fudge width a bit if scaling is 100%
         screen_dpi = self.root.winfo_fpixels('1i')
         dpi_factor = (96/72) * (screen_dpi / 96) * config.window_scalar
@@ -121,13 +73,17 @@ class ForzaBeep():
         if screen_dpi <= 96.0:
             width += 40 #hack for 100% size scaling in Windows
         
-        self.root.geometry(f"{width}x{height}")
+        # self.root.geometry(f"{width}x{height}") #not required
         self.root.protocol('WM_DELETE_WINDOW', self.close)
         self.root.resizable(False, False)
         self.root.tk.call('tk', 'scaling', dpi_factor)
-        # self.root.attributes('-toolwindow', True)
+        # self.root.attributes('-toolwindow', True) #force on top
 
-    def __init__vars(self):
+    def init_vars(self):
+        self.gears = Gears()
+        self.runcollector = RunCollector(config=config)
+        self.lookahead = Lookahead(config.linreg_len_min,
+                                   config.linreg_len_max)
         self.we_beeped = 0
         self.beep_counter = 0
         self.debug_target_rpm = -1
@@ -136,118 +92,79 @@ class ForzaBeep():
         
         self.curve = None
 
-        self.gears = GUIGears()
-        self.runcollector = RunCollector()
-        self.lookahead = Lookahead(config.linreg_len_min,
-                                   config.linreg_len_max)
-
         self.shiftdelay_deque = deque(maxlen=120)
 
         self.car_ordinal = None
         self.car_performance_index = None
         
-        self.display_packet_format = True
+        self.print_packet_format = True
 
-    def __init__window_buffers_frame(self, row):
-        frame = tkinter.LabelFrame(self.root, text='Variables')
-        frame.grid(row=row, column=5, rowspan=3, columnspan=4, sticky='EW')
-
-        self.tone_offset = GUIConfigVariable_ToneOffset(frame, 0)
-        self.hysteresis_percent = GUIConfigVariable_HysteresisPercent(frame, 1)
-        self.revlimit_percent = GUIConfigVariable_RevlimitPercent(frame, 2)
-        self.revlimit_offset = GUIConfigVariable_RevlimitOffset(frame, 3)
-
-        self.edit_var = tkinter.IntVar(value=0)
-        tkinter.Checkbutton(frame, text='Edit', variable=self.edit_var,
-                            command=self.edit_handler).grid(row=0, column=3,
-                                                            sticky=tkinter.W)
-        self.edit_handler()
-
-    def __init__window(self):
+    def init_gui_vars(self):
         root = self.root
-        self.gears.init_window(self.root)
-
+        self.gears = GUIGears(root)
+        self.revlimit = GUIRevlimit(root, defaultvalue=-1)
+        self.volume = GUIVolume(root, value=config.volume)
+        self.peakpower = GUIPeakPower(root)
+        self.tach = GUITach(root)
+        self.buttonreset = tkinter.Button(root, text='Reset', borderwidth=3, 
+                                          command=self.reset)
+        self.buttonstartstop = GUIButtonStartStop(root, self.startstop_handler)
+        self.buttongraph = GUIButtonGraph(root, self.buttongraph_handler, 
+                                          config)
+        
+        frame = tkinter.LabelFrame(root, text='Variables')
+        self.varframe = frame
+        
+        self.tone_offset = GUIToneOffset(frame, config)
+        self.hysteresis_percent = GUIHysteresisPercent(frame, config)
+        self.revlimit_percent = GUIRevlimitPercent(frame, config)
+        self.revlimit_offset = GUIRevlimitOffset(frame, config)
+        self.buttonvaredit = GUIButtonVarEdit(frame, self.edit_handler)
+        self.buttonvaredit.invoke() #trigger disabling of var boxes
+        
+    def init_gui_grid(self):
+        # for r in range(5):
+        #     self.root.rowconfigure(index=r, weight=1)
+        self.gears.init_grid()
         row = GUIGears.ROW_COUNT #start from row below gear display
-
-        self.revlimit = GUIRevlimit(root, defaultvalue=-1, row=row,
-                                     defaultguivalue=self.DEFAULT_GUI_VALUE)
-        self.revlimit.grid(row=row, column=0)
-
-        self.__init__window_buffers_frame(row)
         
-        volume = tkinter.Label(self.root, text='Volume')
-        volume.grid(row=row, column=9, columnspan=2, sticky=tkinter.SE)
-
-        row += 1 #continue on next row
+        #force minimum row size for other rows
+        self.root.rowconfigure(index=row+3, weight=1000)
+       
+        self.revlimit.grid(       row=row,   column=0)    
+        self.varframe.grid(       row=row,   column=5, rowspan=4, columnspan=4, 
+                                                            sticky=tkinter.EW)  
+        self.volume.grid(         row=row,   column=9)        
         
-        self.volume = tkinter.IntVar(value=config.volume)
-        scale = tkinter.Scale(self.root, orient=tkinter.VERTICAL, showvalue=1,
-                      from_=100, to=0, variable=self.volume, resolution=25)
-        scale.grid(row=row, column=10, columnspan=1, rowspan=2, 
-                    sticky=tkinter.NE)
+        self.peakpower.grid(      row=row+1, column=0)   
         
-        peakpower = tkinter.Label(self.root, text='Peak')
-        peakpower.grid(row=row, column=0, columnspan=1, sticky=tkinter.E)     
-        self.peakpower = tkinter.StringVar(value='')
-        peak = tkinter.Entry(self.root, textvariable=self.peakpower, 
-                             width=22, state='readonly')
-        peak.grid(row=row, column=1, sticky=tkinter.W, columnspan=4)
-        self.set_peak_power()
+        self.buttonreset.grid(    row=row+2, column=3)
+        self.buttonstartstop.grid(row=row+2, column=4)
+        self.buttongraph.grid(    row=row+2, column=9, rowspan=2, columnspan=2,
+                                                          sticky=tkinter.SW)
         
-        row += 1 #continue on next row
-
-        self.update_rpm = True
-        self.rpm = tkinter.IntVar(value=0)
-        tkinter.Label(self.root, text='Tach').grid(row=row, column=0,
-                                                  sticky=tkinter.E)
-        tkinter.Entry(self.root, textvariable=self.rpm, width=6,
-                      justify=tkinter.RIGHT, state='readonly'
-                      ).grid(row=row, column=1, sticky=tkinter.W)
-        tkinter.Label(self.root, text='RPM').grid(row=row, column=2,
-                                                  sticky=tkinter.W)
-
-        resetbutton = tkinter.Button(self.root, text='Reset', borderwidth=3,
-                                     command=self.reset)
-        resetbutton.grid(row=row, column=3)
-
-        self.startstop_var = tkinter.StringVar(value='Idle')
-        startstopbutton = tkinter.Button(self.root, borderwidth=3, 
-                                         textvariable=self.startstop_var, 
-                                         command=self.startstop_handler)
-        startstopbutton.grid(row=row, column=4)
-
-        # row += 1 #continue on next row
+        self.tach.grid(           row=row+3, column=0)
         
-        self.buttongraph = ButtonGraph(self.root, self.graphbutton_handler,
-                                       config)
-        self.buttongraph.grid(row=row, column=9, rowspan=2, columnspan=2,
-                              sticky=tkinter.NW)
+        #these variables are gridded into varframe
+        self.tone_offset.grid(       row=0, column=0)
+        self.hysteresis_percent.grid(row=1, column=0)
+        self.revlimit_percent.grid(  row=2, column=0)
+        self.revlimit_offset.grid(   row=3, column=0)
+        self.buttonvaredit.grid(     row=0, column=3)
         
-
     def startstop_handler(self, event=None):
-        self.startstop_var.set('Start' if self.loop.is_running() else 'Stop')
-        self.loop.loop_toggle(True)
+        self.buttonstartstop.toggle(self.loop.is_running())
+        self.loop.toggle(True)
 
-    def graphbutton_handler(self, event=None):
-        self.buttongraph.create_graphwindow(self.curve, 
-                                            self.revlimit_percent.get())
+    def buttongraph_handler(self, event=None):
+        self.buttongraph.create_window(self.curve, self.revlimit_percent.get())
 
-    def set_peak_power(self):
-        if self.curve is None:
-            return
-        rpm, peakpower = self.curve.get_peakpower_tuple()
-        string = f'~{peakpower/1000:>4.0f} kW at ~{round_to(rpm, 50):>5} RPM'
-        self.peakpower.set(string)
-                                   
+    #enable or disable modification of the four listed variable spinboxes
     def edit_handler(self):
-        varlist = [self.revlimit_offset, self.revlimit_percent,
-                   self.tone_offset, self.hysteresis_percent]
-        if self.edit_var.get():
-            for var in varlist:
-                var.config(state='readonly')
-        else:
-            for var in varlist:
-                var.config(state=tkinter.DISABLED)
+        state = 'readonly' if self.buttonvaredit.get() else tkinter.DISABLED
+        for var in [self.revlimit_offset, self.revlimit_percent,
+                    self.tone_offset, self.hysteresis_percent]:
+            var.config(state=state)
                 
     def reset(self, *args):
         self.runcollector.reset()
@@ -261,24 +178,16 @@ class ForzaBeep():
         self.car_ordinal = None
         self.car_performance_index = None
 
-        self.rpm.set(0)
-        self.update_rpm = True
+        self.tach.reset()
         self.revlimit.reset()
-        self.peakpower.set('')
+        self.peakpower.reset()
         self.buttongraph.reset()
 
         self.shiftdelay_deque.clear()
         self.tone_offset.reset_counter()
         self.rpm_hysteresis = 0
 
-        self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_NA)
-
         self.gears.reset()
-
-    def loop_update_rpm(self, fdp):
-        if self.update_rpm:
-            self.rpm.set(int(fdp.current_engine_rpm))
-        self.update_rpm = not self.update_rpm #halve RPM update frequency        
 
     #reset if the car_ordinal or the PI changes
     def loop_test_car_changed(self, fdp):
@@ -293,32 +202,36 @@ class ForzaBeep():
             print(f'Hysteresis: {self.hysteresis_percent.as_rpm(fdp):.1f} rpm')
             print(f'Engine: {fdp.engine_idle_rpm:.0f} min rpm, {fdp.engine_max_rpm:.0f} max rpm')
 
-    def loop_guess_revlimit(self, fdp):
-        if config.revlimit_guess != -1 and self.revlimit.get() == -1:
-            self.revlimit.set(fdp.engine_max_rpm - config.revlimit_guess)
-            self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_GUESS)
-            print(f'guess revlimit: {self.revlimit.get()}')    
-
-    def loop_hysteresis(self, fdp):
+    def loop_update_rpm(self, fdp):
         rpm = fdp.current_engine_rpm
+        
         hysteresis = self.hysteresis_percent.as_rpm(fdp)
         if abs(rpm - self.rpm_hysteresis) >= hysteresis:
             self.rpm_hysteresis = rpm
 
-    def loop_setcurve(self, newrun_better):
+        self.tach.update(rpm)
+
+    def loop_guess_revlimit(self, fdp):
+        if config.revlimit_guess != -1 and self.revlimit.get() == -1:
+            self.revlimit.set(fdp.engine_max_rpm - config.revlimit_guess, 
+                              state='guess')
+            print(f'guess revlimit: {self.revlimit.get()}')    
+
+    def loop_linreg(self, fdp):
+        self.lookahead.add(self.rpm_hysteresis) #update linear regresion
+
+    def loop_runcollector_setcurve(self):
         self.curve = Curve(self.runcollector.get_run())
         self.revlimit.set(self.curve.get_revlimit())
-        self.set_peak_power()
+        self.peakpower.set(*self.curve.get_peakpower_tuple())
         self.buttongraph.enable()
-        self.revlimit.configure(readonlybackground=self.REVLIMIT_BG_CURVE)
+        
         if config.notification_power_enabled:
             multi_beep(config.notification_file,
                        config.notification_file_duration,
                        config.notification_power_count,
                        config.notification_power_delay)
-        if newrun_better: #force recalculation of rpm if possible
-            self.gears.newrun_decrease_state()
-
+            
     #grab curve if we collected a complete run
     #update curve if we collected a run in an equal or higher gear
     #test if this leads to a more accurate run with a better rev limit defined
@@ -334,7 +247,10 @@ class ForzaBeep():
                          self.runcollector.is_newrun_better(self.curve))
 
         if self.curve is None or newrun_better:
-            self.loop_setcurve(newrun_better)
+            self.loop_runcollector_setcurve()
+
+        if newrun_better: #force recalculation of rpm if possible
+            self.gears.newrun_decrease_state()
             
         if self.runcollector.is_run_final():
             self.runcollector.set_run_final()
@@ -342,6 +258,8 @@ class ForzaBeep():
             self.runcollector.reset()
 
     def loop_update_gear(self, fdp):
+        if fdp.clutch > 0:
+            return
         if self.gears.update(fdp) and config.notification_gear_enabled:
             multi_beep(config.notification_file,
                        config.notification_file_duration,
@@ -427,25 +345,22 @@ class ForzaBeep():
             self.we_beeped -= 1
 
     def loop_func(self, fdp):
-        if self.display_packet_format:
+        if self.print_packet_format:
             print(f"Format: {fdp.packet_format}")
-            self.display_packet_format = False
+            self.print_packet_format = False
         
-        if not fdp.is_race_on:
+        print(f'rpm {fdp.current_engine_rpm} gear {fdp.gear}')
+        #skip if not racing or gear number outside valid range
+        if not(fdp.is_race_on and (1 <= int(fdp.gear) <= MAXGEARS)):
             return
 
-        gear = int(fdp.gear)
-        if gear < 1 or gear > MAXGEARS:
-            return
-
-        self.loop_update_rpm(fdp)
         self.loop_test_car_changed(fdp) #reset if car ordinal/PI changes
+        self.loop_update_rpm(fdp) #update tach and hysteresis rpm
         self.loop_guess_revlimit(fdp) #guess revlimit if not defined yet
-        self.loop_hysteresis(fdp) #update self.rpm_hysteresis
-        self.lookahead.add(self.rpm_hysteresis) #update linear regresion
+        self.loop_linreg(fdp) #update lookahead with hysteresis rpm
         self.loop_runcollector(fdp) #add data point for curve collecting
         self.loop_update_gear(fdp) #update gear ratio and state of gear
-        self.loop_calculate_shiftrpms() #derive shift
+        self.loop_calculate_shiftrpms() #derive shift rpm if possible
         self.loop_test_for_shiftrpm(fdp) #test if we have shifted
         self.loop_beep(fdp) #test if we need to beep
 
@@ -466,6 +381,7 @@ class ForzaBeep():
         return (self.lookahead.test(target_rpm, offset, torque_ratio),
                 torque_ratio)
 
+    #make sure the target_rpm is the lowest rpm trigger of all triggered beeps
     def update_target_rpm(self, val):
         if self.debug_target_rpm == -1:
             self.debug_target_rpm = val
@@ -473,6 +389,7 @@ class ForzaBeep():
             self.debug_target_rpm = min(self.debug_target_rpm, val)
 
     def test_for_beep(self, shiftrpm, fdp):
+        #enforce minimum throttle for beep to occur
         if fdp.accel < config.min_throttle_for_beep:
             return False
         tone_offset = self.tone_offset.get()
@@ -480,7 +397,7 @@ class ForzaBeep():
 
         from_gear, from_gear_ratio = self.torque_ratio_test(shiftrpm,
                                                             tone_offset, fdp)
-        # from_gear = from_gear and fdp.accel >= constants.min_throttle_for_beep
+        #from_gear = from_gear and fdp.accel >= constants.min_throttle_for_beep
 
         revlimit_pct, revlimit_pct_ratio = self.torque_ratio_test(
             revlimit*self.revlimit_percent.get(), tone_offset, fdp)
@@ -517,7 +434,7 @@ class ForzaBeep():
             print("Failed to write GUI variables to config file")
 
     def close(self):
-        self.loop.loop_close()
+        self.loop.close()
         self.config_writeback()
         self.root.destroy()
 
