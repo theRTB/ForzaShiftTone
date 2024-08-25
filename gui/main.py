@@ -18,18 +18,18 @@ PROCESS_SYSTEM_DPI_AWARE = 1
 PROCESS_PER_MONITOR_DPI_AWARE = 2
 ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE)
 
-from base.gtbeep import GTBeep
+from base.main import ForzaBeep
 
 #TODO: is there an alternative way to use config?
 from config import config, FILENAME_SETTINGS
 config.load_from(FILENAME_SETTINGS)
 
-from gui.gtudploop import GUIGTUDPLoop
+from gui.forzaudploop import GUIForzaUDPLoop
 from gui.rpm import GUIRPM
 from gui.history import GUIHistory
 from gui.carordinal import GUICarOrdinal
 from gui.gear import GUIGears
-from gui.configvar import (GUIPeakPower, GUIToneOffset, GUIRevbarData,
+from gui.configvar import (GUIPeakPower, GUIToneOffset,
                            GUIRevlimit, GUIVolume, GUIConfigButton)
 from gui.enginecurve import GUIEngineCurve
 
@@ -39,7 +39,6 @@ from utility import Variable
     # hide 0.00 rel ratio on final gear: add finalgear option somehow
     # rework row display on shift history: it visibles rotates due to slowness
     # move to labels instead
-    #Grey out gear 9 and 10: non-functional for GT7
     #Maybe phase out Settings window to extend main window to the right?
     #Grid variables into those
     #Brief shift history of the last 5 shifts or so in main window?
@@ -49,14 +48,14 @@ from utility import Variable
     # Test if window scalar config variable works as expected
     # Test if changing dpi works as expected
     
-#tkinter GUI wrapper around GTBeep
-class GUIGTBeep(GTBeep):
-    TITLE = "GTShiftTone: Dynamic shift tone for Gran Turismo 7"
+#tkinter GUI wrapper around ForzaBeep
+class GUIForzaBeep(ForzaBeep):
+    TITLE = "ForzahiftTone: Dynamic shift tone for the Forza series"
     WIDTH, HEIGHT = 815, 239 #most recent dump of size at 150% scaling
     WRITEBACK_VARS = ['revlimit_percent', 'revlimit_offset', #'tone_offset',
-                      'hysteresis_percent', 'volume', 'target_ip', 
+                      'hysteresis_percent', 'volume', 
                       'window_x', 'window_y', 'dynamictoneoffset',
-                      'includereplay', 'window_x', 'window_y', 'target_ip']
+                      'includereplay', 'window_x', 'window_y']
     
     def __init__(self):
         super().__init__()
@@ -107,7 +106,7 @@ class GUIGTBeep(GTBeep):
         
     def init_gui_vars(self):
         root = self.root
-        self.loop = GUIGTUDPLoop(root, config, loop_func=self.loop_func)
+        self.loop = GUIForzaUDPLoop(root, config, loop_func=self.loop_func)
         
         self.gears = GUIGears(root, config)
         self.revlimit = GUIRevlimit(root, defaultvalue=-1)
@@ -117,7 +116,6 @@ class GUIGTBeep(GTBeep):
         self.rpm = GUIRPM(root, hysteresis_percent=self.hysteresis_percent)
         self.volume = GUIVolume(root, config)
         self.peakpower = GUIPeakPower(root)
-        self.revbardata = GUIRevbarData(root)
         self.car_ordinal = GUICarOrdinal(root)
         
         self.curve = GUIEngineCurve(root, self.buttongraph_handler, 
@@ -140,7 +138,6 @@ class GUIGTBeep(GTBeep):
         self.volume.grid(      row=0,     column=12, rowspan=4)         
        
         self.revlimit.grid(    row=row,   column=0)  
-        self.revbardata.grid(  row=row,   column=3)
         self.loop.grid(        row=row,   column=8,  rowspan=3, columnspan=3,
                                                              sticky=tkinter.EW)  
         
@@ -157,7 +154,6 @@ class GUIGTBeep(GTBeep):
     def reset(self):
         super().reset()
         self.peakpower.reset()
-        self.revbardata.reset()
 
     def buttongraph_handler(self, event=None):
         self.curve.create_window(self.revlimit_percent.get(),
@@ -184,15 +180,12 @@ class GUIGTBeep(GTBeep):
         #grab x,y position to save as window_x and window_y
         self.window_x = Variable(self.root.winfo_x())
         self.window_y = Variable(self.root.winfo_y())
-        
-        #hack to get ip from loop
-        self.target_ip = Variable(self.loop.get_target_ip())
-        
+                
         super().config_writeback(varlist)
         
 def main():
-    global gtbeep #for debugging
-    gtbeep = GUIGTBeep()
+    global forzabeep #for debugging
+    forzabeep = GUIForzaBeep()
 
 if __name__ == "__main__":
     main()

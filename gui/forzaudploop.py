@@ -6,7 +6,7 @@ Created on Mon Feb 19 20:46:18 2024
 """
 from mttkinter import mtTkinter as tkinter
 
-from base.gtudploop import GTUDPLoop
+from base.forzaudploop import ForzaUDPLoop
 
 #TODO: update this class to use ipaddress library
 class GUITargetIP():
@@ -74,9 +74,9 @@ class GUIStatus():
     def set(self, value):
         self.tkvar.set(value)
         
-class GUIGTUDPLoop(GTUDPLoop):
+class GUIForzaUDPLoop(ForzaUDPLoop):
     def __init__(self, root, config, loop_func=None):
-        super().__init__(config.target_ip, loop_func=loop_func)
+        super().__init__(config, loop_func=loop_func)
         self.state = 'Stopped'
         
         self.init_tkinter(root, config)        
@@ -89,7 +89,7 @@ class GUIGTUDPLoop(GTUDPLoop):
         self.gui_ip = GUITargetIP(self.frame, config.target_ip)
         self.status = GUIStatus(self.frame, self.state)
         
-        self.gui_ip.grid(         row=0, column=0)
+        # self.gui_ip.grid(         row=0, column=0)
         self.buttonstartstop.grid(row=1, column=0)
         self.status.grid(         row=1, column=1, columnspan=2)
     
@@ -101,11 +101,11 @@ class GUIGTUDPLoop(GTUDPLoop):
         self.startstop_handler() #implied start, not explicit start
 
     def startstop_handler(self, event=None):
-        if self.gui_ip.get() != '':
-            self.buttonstartstop.toggle(self.is_running()) #toggle text
-            self.gui_ip.toggle(self.is_running()) #toggle read-only
-            self.set_target_ip(self.gui_ip.get()) #set loop IP before start
-            self.toggle(True)
+        # if self.gui_ip.get() != '':
+        self.buttonstartstop.toggle(self.is_running()) #toggle text
+        # self.gui_ip.toggle(self.is_running()) #toggle read-only
+        # self.set_target_ip(self.gui_ip.get()) #set loop IP before start
+        self.toggle(True)
     
     def update_status(self, value):
         self.state = value
@@ -122,18 +122,18 @@ class GUIGTUDPLoop(GTUDPLoop):
     
         super().toggle(toggle)
         
-    def send_heartbeat(self):
-        if self.state in ['Started', 'Timeout']:
-            self.update_status('Waiting')
+    # def send_heartbeat(self):
+    #     if self.state in ['Started', 'Timeout']:
+    #         self.update_status('Waiting')
             
-        super().send_heartbeat()
+    #     super().send_heartbeat()
         
-    def nextGTdp(self):
-        value = super().nextGTdp()
+    def nextFdp(self, server_socket):
+        value = super().nextFdp(server_socket)
         
-        if value is None and self.state in ['Waiting', 'Receiving']:
+        if value is None and self.state in ['Started', 'Receiving']:
             self.update_status('Timeout')
-        if value is not None and self.state in ['Waiting', 'Timeout']:
+        if value is not None and self.state in ['Started','Waiting','Timeout']:
             self.update_status('Receiving')
         
         return value

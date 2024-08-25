@@ -12,7 +12,7 @@ from os.path import exists
 from os import makedirs
 makedirs('curves/', exist_ok=True) #create curves folder if not exists
 
-from utility import np_drag_fit
+from utility import np_drag_fit, simplify_curve, round_to
 
 #poorly named: does not extend Curve
 #Given an array of consecutive rpm/accel points at full throttle and an array
@@ -32,6 +32,8 @@ class EngineCurve():
     ENCODING = 'ISO-8859-1' #why not UTF-8?
     FOLDER = 'curves'
     FILENAME = lambda _, gtdp: f'{EngineCurve.FOLDER}/{gtdp.car_ordinal}.tsv'
+    ROUND = 100 #round the saved curve to multiples of round
+    ROUND_REVLIMIT = 50 #covers 99.9% of all standard revlimits
     
     #code duplication, but calling reset in __init__ causes issues with
     #inheritance
@@ -58,7 +60,8 @@ class EngineCurve():
             print(f'Loaded curve from {filename}')
         elif len(kwargs) > 0:
             self.curve_state = True
-            self.init_from_drag_fit(*args, **kwargs)
+            # self.init_from_drag_fit(*args, **kwargs)
+            self.init_from_run(*args, **kwargs)
             self.save(filename)
             print(f'Saved curve to {filename}')
         else:
@@ -68,6 +71,21 @@ class EngineCurve():
     # def init_from_file(self, filename, *args, **kwargs):
     #     self.load(filename)
     
+    #TODO: get revlimit from runcollector
+    def init_from_run(self, run, *args, **kwargs):
+        
+        rpm = np.array([p.current_engine_rpm for p in run])
+        power = np.array([p.power for p in run]) / 1000 #W -> kW
+        torque = np.array([p.torque for p in run])
+        
+        #round revlimit to nearest 50 (default)
+        self.revlimit = round_to(max(rpm), 50)
+        
+        self.rpm, self.torque = simplify_curve(rpm, torque, xmax=self.revlimit, 
+                                               n=self.ROUND) 
+        _ , self.power = simplify_curve(rpm, power, xmax=self.revlimit, 
+                                        n=self.ROUND)      
+
     def init_from_drag_fit(self, *args, **kwargs):
         accelrun = kwargs.get('accelrun', None)
         if accelrun is None: # and len(args) > 0: #TODO defensive programming
@@ -78,17 +96,18 @@ class EngineCurve():
         
         self.correct_final_point()
 
-    def correct_final_point(self):
-        x1, x2 = self.rpm[-2:]
-        # print(f'x1 {x1:.3f} x2 {x2:.3f} revlimit {self.revlimit}')
-        np.append(self.rpm, self.revlimit)
-        self.rpm = np.append(self.rpm, self.revlimit)
-        for name in ['power', 'torque']: #,'boost']:
-            array = getattr(self, name)
-            y1, y2 = array[-2:]
-            ynew = (y2 - y1) / (x2 - x1) * (self.revlimit - x2) + y2
-            setattr(self, name, np.append(array, ynew))
-            # print(f'y1 {y1:.3f} y2 {y2:.3f} ynew {ynew:.3f}')
+    #not necessary, we are using simplify_curve for this functionality
+    # def correct_final_point(self):
+    #     x1, x2 = self.rpm[-2:]
+    #     # print(f'x1 {x1:.3f} x2 {x2:.3f} revlimit {self.revlimit}')
+    #     np.append(self.rpm, self.revlimit)
+    #     self.rpm = np.append(self.rpm, self.revlimit)
+    #     for name in ['power', 'torque']: #,'boost']:
+    #         array = getattr(self, name)
+    #         y1, y2 = array[-2:]
+    #         ynew = (y2 - y1) / (x2 - x1) * (self.revlimit - x2) + y2
+    #         setattr(self, name, np.append(array, ynew))
+    #         # print(f'y1 {y1:.3f} y2 {y2:.3f} ynew {ynew:.3f}')
 
     #get peak power according to peak power rounded to 0.x
     #the rounding is necessary to avoid some randomness in collecting a curve
@@ -108,6 +127,7 @@ class EngineCurve():
         i = np.argmin(np.abs(self.rpm - target_rpm))
         return self.torque[i]
     
+    #TODO: use this instead of torque_ratio_test in ForzaBeep
     def torque_ratio(self, gtdp, target_rpm):
         torque_ratio = 1
         if self.is_loaded():
@@ -130,8 +150,8 @@ class EngineCurve():
         
         #hardcoding adjustment to rpm, power and torque output
         data[0] = [f'{rpm:.0f}' for rpm in data[0]] 
-        data[1] = [f'{power:.2f}' for power in data[1]]
-        data[2] = [f'{torque:.2f}' for torque in data[2]]
+        data[1] = [f'{power:.1f}' for power in data[1]]
+        data[2] = [f'{torque:.1f}' for torque in data[2]]
         
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile, delimiter=self.DELIMITER)

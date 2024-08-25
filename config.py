@@ -11,6 +11,8 @@ FILENAME_SETTINGS = 'config.json'
 
 class config():
     target_ip = ''
+    port = 12350
+    packet_format = None
     
     sound_file = 'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav'
     sound_files = {100:'audio/audiocheck.net_sin_1000Hz_-3dBFS_0.1s.wav',

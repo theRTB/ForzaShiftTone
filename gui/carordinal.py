@@ -6,7 +6,7 @@ Created on Sun Jul 21 13:53:13 2024
 """
 from mttkinter import mtTkinter as tkinter
 
-from base.carordinal import CarData, CarOrdinal
+from base.carordinal import CarOrdinal
 
 class GUICarOrdinal(CarOrdinal):
     def __init__(self, root, defaultguivalue=''):
@@ -28,9 +28,6 @@ class GUICarOrdinal(CarOrdinal):
 
     def gui_get(self):
         return self.tkvar.get()
-
-    def get_name(self):
-        return CarData.get_name(self.get())
 
     def set(self, value):
         super().set(value)

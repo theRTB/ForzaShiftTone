@@ -8,8 +8,8 @@ import numpy as np
 
 from utility import rolling_avg, PowerCurve
 
-#can be initialized from a Curve or an array of GTDataPacket
-#TODO: rename to something like GTDPNPArray?
+#can be initialized from a Curve or an array of ForzaDataPacket
+#TODO: rename to something like ForzaDPNPArray?
 class Curve ():
     def __init__(self, packets):
         if type(packets) == list:

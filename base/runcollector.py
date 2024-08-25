@@ -90,10 +90,6 @@ class RunCollector():
                 self.reset() #run not clean, started too high rpm
                 return
             self.state = 'DONE'
-        
-        # if self.state == 'DONE':
-        #     if self.is_run_final():
-        #         self.state = 'FINAL'
 
         self.prev_rpm = fdp.current_engine_rpm
 
@@ -109,38 +105,9 @@ class RunCollector():
         if self.gear_collected == -1:
             return None
         return self.gear_collected
-
-    def get_run(self):
-        return self.run
-
-    #new run is considered better if:
-    # - gear is equal or higher
-    # - length of new run is equal or longer
-    # - either or both:
-    #    - revlimit is higher
-    #    - starting rpm is lower
-    def is_newrun_better(self, old_curve):
-        if not self.is_run_completed():
-            return False
         
-        if ((self.get_revlimit_if_done() >= old_curve.get_revlimit()
-             or self.run[0].current_engine_rpm <= old_curve.rpm[0])
-             and self.get_gear() >= old_curve.get_gear()
-             and len(self.run) >= len(old_curve.rpm)):
-            print("Runcollector: new run better")
-            return True
-        return False
-    
-    #TODO: add more requirements to a locked run
-    #minimum rpm: 2x idle rpm or so?
-    def is_run_final(self):
-        if len(self.run) > self.MINLEN_LOCK:
-            print(f"Runcollector: Run is final, len {len(self.run)/60:.1f}s")
-            return True
-        return False
-
-    def set_run_final(self):
-        self.state = 'FINAL'
+    def get_data(self):
+        return {'run': self.run}
 
     def reset(self):
         self.run = []

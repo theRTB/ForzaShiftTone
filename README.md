@@ -1,54 +1,49 @@
-# GT7ShiftTone
-It beeps, you shift.
+# ForzaShiftTone
 
-**Windows GUI application to provide a shift tone for Gran Turismo 7.**
+**Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
 
-![example Subaru WRX STI 2014](images/GUIandPower-4.png)
+![example v0.90 BMW M5 2018](images/sample-BMW-M5-2018-16-1.png)
 
-## On first launch
-You will need to find and manually set your console IP address into the UI:
-- Find the IP address by going to the PS Settings -> Network -> Connection Status -> View Connection Status -> IPv4 address
-- Enter this IPv4 address into the PS IP entry box then hit Start
-  - After this, GT7ShiftTone will automatically connect to this address and autostart
+## TL;DR
 
-## Steps
-- Load into Special Route X Time Trial, drive past the first tunnel (with the finish line)
-- Straighten the car, apply full throttle in a gear that goes from low/medium RPM to revlimit in a few seconds
-- When revlimit is hit twice, briefly press handbrake to disengage the clutch
-- Let the car roll for several seconds to 10 seconds (finish before the uphill section)
-  - Avoid steering inputs as much as possible, controller is preferable
-- Press throttle to finish. You can now go to other races with a shift beep.
+- Per gear: Drive around on flat tarmac until you hear a double beep
+  - Maintain fixed speed if it has trouble locking the gear ratio
+- On a flat straight: Hold full throttle starting from low rpm until you hear a triple beep
+  - Use a gear with low/no wheelspin but able to hit revlimit before the end of the straight
+  - Try again if you hit the rev limiter for several consecutive seconds with no triple beep
 - Be aware that false positives exist: not every beep is an upshift.
 
-## Current release
-Revised first public version. This program is not yet user friendly.
+### Enable Data Out in Forza Motorsport / Forza Horizon 4/5
 
-### Launch with:
-- gtbeep.py: For Python users  
-- ~~**GT7ShiftTone.vbs**: to launch the application (Preferred, requires ZIP download)~~  
-- ~~**GT7ShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information (requires ZIP download)~~
+To configure Data Out (remote telemetry) in supported Forza games on Steam for this application: 
+- Head to **Settings** -> **Gameplay & HUD** -> scroll down to the bottom (**HUD and Gameplay** in Forza Horizon 5)
+- Set **Data Out** to _On_, enter _127.0.0.1_ as **Data out IP address** and **Data out IP port** _12350_. You may have to restart the game.
+- The **Data Out Packet Format** should be set to '_Car Dash_' for Forza Motorsport
+- The Microsoft Store version may require a 3rd party Loopback Utility
+- It is unknown whether the Data Out functions on the consoles at all
+  - If it works, enter the IP address of your laptop instead of _127.0.0.1_
+
+## Current release
+**ForzaShiftTone.vbs**: to launch the application (Preferred)  
+**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information
+**forzabeep.py**: for python users
 
 Changes:  
-- Improved algorithm to derive points on the power curve, especially the final point.
-- Displayed shift points are now rounded to the nearest 25. The method used in this program probably isn't even accurate enough for that.
-- Power curves are now saved based on the Car ID. They can be modified/created through Excel as well (tab separated file). Default save folder: curves\.
+- Large back-end rewrite
+- Added shift history window for the past 10 shifts
+- Updated shift logic to include the latest FM style shift
 
 ## Implementation
 
-The approach is to get consecutive points of acceleration values across a large range of RPMs up to revlimit. These acceleration values include the acceleration from engine torque minus various resistive forces.  
-We derive an effective sum of resistive forces by letting the car coast with the clutch engaged and measure how much the car slows based on GPS speed. We add this back to the acceleration curve to cancel out the drag and this gives us the basic torque curve.  
-We use the resulting power curve to derive shift points.
-
 The Tone Offset is dynamic. The program keeps track of the time between a shift tone and an initiated shift, and modifies the running Tone Offset if the tone is early or late.
-
-There are three triggers for the shift tone:
-- Shift RPM: The RPM value at which power in the current gear becomes lower than the power in the next gear: the ideal time to upshift. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
-- Percentage of revlimit: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
-  - Example: A rev limit of 7500 and a value of 98.0% triggers a tone if it predicts 7350 RPM will be reached in 283 milliseconds
-- Time distance to revlimit: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 100 milliseconds, which leads to a default prediction distance of 383ms
+There are three triggers:
+- **Shift RPM**: The RPM value at which power in the current becomes lower than the power in the next gear: the ideal time to upshift. If the application predicts shift RPM is reached in the defined tone offset time, trigger a beep
+- **Percentage of revlimit**: Uses the tone offset distance as predicted distance to current RPM hitting the listed percentage of rev limit
+  - Example: A rev limit of 7500 and a value of 98.0% triggers a beep if it predicts 7350 rpm will be reached in 283 milliseconds
+- **Time distance to revlimit**: uses the tone offset value plus the revlimit ms value as predicted distance to current RPM hitting the defined revlimit. Defaults to 100 milliseconds, which leads to a prediction distance of 383ms
 
 The delay between beep triggers is currently set to 0.5 seconds. This time-out is shared between the three triggers.  
-If you choose to not shift and remain above the trigger RPM, the program will not beep again even if revlimit is hit.
+If you choose to not shift and remain above the trigger rpm, the program will not beep again even if revlimit is hit.
 
 ### General display values:
 
@@ -60,10 +55,10 @@ If you choose to not shift and remain above the trigger RPM, the program will no
 
 ### Per gear:
 
-- **Target**: The derived shift RPM value.  
-This requires a power curve (revlimit shows a green background)
+- **Target**: The derived shift rpm value.  
+This requires a power curve and the ratio of the current gear and the next gear to be determined (green background)
 - **Rel. Ratio**: The relative ratio of the gear ratios between two consecutive gears.  
-If gear 2 has a gear ratio of 2.375 and gear 3 has a gear ratio of 1.761, then the relative ratio is 2.375/1.761 ≈ 1.35: third gear is 35% longer than second gear.
+If gear 1 has a drivetrain ratio of 15 and gear 2 has a drivetrain ratio of 11 then the relative ratio is 15/11 = 1.36 approximately
 - **Ratio**: The gear ratio of the gear
   - Toggle between Ratio and Rel. Ratio by double clicking the "Ratio" or "Rel. Ratio" label text
 
@@ -83,26 +78,16 @@ In Settings:
 - **Dynamic Tone Offset**: Enables or disables the dynamic updating of the tone offset.
 - **Include replays**: Sets the program to function during replays: useful primarily to log shift points in a replay.
 
-## Settings are saved to config.json
+## Power graph example
+![example v0.90 BMW M5 2018 power graph](images/sample-BMW-M5-2018-16-2.png)
 
-The settings are saved to _config.json_ on exit. This includes Tone offset, Hysteresis, Revlimit %, Revlimit ms, Volume, Dynamic Tone Offset and Console IP. The gear ratios are not saved.  
+## Settings file
+
+The settings are saved to _config.json_ on exit. This includes Tone offset, Hysteresis, Revlimit %, Revlimit ms and Volume. The power curve and gear ratios are not saved.  
 Remote telemetry sends data at 60 packets per second. The offset variables (Tone offset, revlimit ms) while defined in milliseconds currently use packet counts in the backend.  
 There is one packet per 16.667 milliseconds, approximately.
 
-## Notes and known issues
-- Assumptions: not grip limited, shift duration of 0 and no penalty to power after shifting (aka, a turbo)
-- Gear 9 and 10 are never filled in even if the car has them: Limitation of the telemetry and implementation.
-- FWD cars can't be measured using controller: Handbrake does not disengage the clutch.
-- The Power Restrictor for example affects the shape of the curve: adjustments will not match a saved curve.
-  - Output adjustment will maintain the overall shape, so is fine to adjust.
-- The default values are arbitrarily chosen and may not suit individual cars or track surface.
-- ~~Power values in the graph are percentage-based: GT7 only provides acceleration not power/torque. Cannot be fixed.~~
-- Due to noise in the acceleration data it is not always possible to derive at which RPM peak power occurs. It can be off by 100 RPM or more.
-- The data is smoothed and will not 100% match the ingame curve which is linear interpolation between points
-- Some cars have a harsh drop in power and will not hit revlimit at higher gears (Super Formula '23 for example), complicating data gathering
-- Revlimit is marginally above the ingame revlimit in by far most runs. We cannot assume it is a multiple of 100 for non-stock cars so rounding down is out.
-- ~~Revlimit is an approximation and is equal to the last highest RPM seen on the full throttle run minus the points smoothed out.~~
-- On Windows the socket is not closed cleanly for no apparent reason: requiring a new console on most consecutive launches
+## Known issues
 - Application will on rare occasions crash: related to the UI library and cannot be fixed
-- Linux support is untested
-- This program _'works for me'_. If you wish to run this script and there are issues, please report them.
+- Due to noise in the power curve it is not always possible to derive a correct peak power value in terms of rpm. It can be off by 100 rpm.
+- Gear ratios may not reasonably match in-game values for AWD: Front/rear tires may have different sizes

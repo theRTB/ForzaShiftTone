@@ -26,7 +26,7 @@ class GUIGear (Gear):
     ENTRY_COLORS = {GearState.UNUSED:     ((BG_UNUSED,  BG_UNUSED),
                                            (BG_UNUSED,  BG_UNUSED)),
                     GearState.REACHED:    ((BG_UNUSED,  BG_UNUSED),
-                                           (BG_UNUSED,  BG_UNUSED)),
+                                           (FG_DEFAULT, BG_REACHED)),
                     GearState.LOCKED:     ((BG_REACHED, BG_REACHED),
                                            (FG_DEFAULT, BG_LOCKED)),
                     GearState.CALCULATED: ((FG_DEFAULT, BG_LOCKED),
@@ -38,8 +38,6 @@ class GUIGear (Gear):
     def __init__(self, number, root, config):
         super().__init__(number, config)
         self.var_bound = None
-        self.round = lambda rpm: (math.ceil(rpm / config.shiftrpm_round) 
-                                                * config.shiftrpm_round)
         self.shiftrpm_var = tkinter.IntVar()
         self.ratio_var = tkinter.DoubleVar()
         self.relratio_var = tkinter.StringVar()
@@ -68,7 +66,7 @@ class GUIGear (Gear):
             self.shiftrpm_entry.grid(row=starting_row+1, column=column)
             self.relratio_entry.grid(row=starting_row+2, column=column,
                                       columnspan=2)
-        # self.variance_entry.grid(row=starting_row+1, column=column)
+        self.variance_entry.grid(row=starting_row+1, column=column)
 
         #let tkinter memorize grid location, then temporarily hide ratio entry
         self.ratio_entry.grid(row=starting_row+2, column=column)
@@ -78,11 +76,11 @@ class GUIGear (Gear):
         super().reset()
         self.var_bound = None
         self.update_entry_colors()
-        # self.variance_entry.grid()
+        self.variance_entry.grid()
 
     def set_shiftrpm(self, val):
         super().set_shiftrpm(val)
-        self.shiftrpm_var.set(self.round(val))
+        self.shiftrpm_var.set(int(val))
 
     def set_ratio(self, val):
         super().set_ratio(val)
@@ -104,18 +102,18 @@ class GUIGear (Gear):
         
         self.shiftrpm_entry.config(**shiftrpm_colors)
         self.ratio_entry.config(**ratio_colors)
-        self.relratio_entry.config(**ratio_colors)
+        self.relratio_entry.config(**shiftrpm_colors)
 
     def to_next_state(self):
         super().to_next_state()
         self.update_entry_colors()
-        # if self.state.at_final():
-        #     self.variance_entry.grid_remove()
+        if self.state.at_final():
+            self.variance_entry.grid_remove()
 
-    def update(self, gtdp, prevgear):
+    def update(self, fdp):
         if self.var_bound is None:
-            self.var_bound = 1e-5 #self.VAR_BOUNDS[fdp.drivetrain_type]
-        return super().update(gtdp, prevgear)
+            self.var_bound = self.VAR_BOUNDS[fdp.drivetrain_type]
+        return super().update(fdp)
 
     def toggle_ratio_display(self):
         if self.ratio_entry.winfo_viewable():

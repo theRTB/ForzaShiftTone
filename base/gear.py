@@ -5,22 +5,22 @@ Created on Wed Aug  2 20:46:58 2023
 @author: RTB
 """
 import math
+import statistics
 from collections import deque
 
-from utility import calculate_shiftrpm
+from mttkinter import mtTkinter as tkinter
 
-#Taken from ForzaShiftTone. GT7 telemetry officially goes up to 8 gears, but
-#if a car has more than 8, it will overflow into other variables. This logic 
-#has not been programmed in, so effectively only 8 gears. If we set this to 8
-#the GUI doesn't align properly.
+from utility import derive_gearratio, calculate_shiftrpm
+
+#The Forza series is limited to 10 gears (ignoring reverse)
 MAXGEARS = 10
 
 #Enumlike class
 class GearState():
     UNUSED     = 0 # gear has not been seen (yet)
-    REACHED    = 1 # gear has been seen (effectively unused for GT7)
-    LOCKED     = 2 # gear ratio grabbed from data packet
-    CALCULATED = 3 # shift rpm calculated off gear ratios and power curve
+    REACHED    = 1 # gear has been seen, variance above lower bound
+    LOCKED     = 2 # variance on gear ratio below lower bound
+    CALCULATED = 3 # shift rpm calculated off gear ratios
 
     def reset(self):
         self.state = self.UNUSED
@@ -130,32 +130,35 @@ class Gear():
         self.state.to_next()
 
     #return True if we should play gear beep
-    def update(self, gtdp, prevgear):
+    def update(self, fdp):
         if self.state.at_initial():
             self.to_next_state()
 
         if self.state.at_least_locked():
             return
-        if not (ratio := round(gtdp.gears[self.gear], 3)):
+
+        if not (ratio := derive_gearratio(fdp)):
             return
-        
-        self.set_ratio(ratio)
-        
-        #we use a reverse logic here because the gears are locked sequentially
-        #1 is set then 2, then 3, etc
-        #but we need the 'next gear' to get the relative ratio which is not set
-        #yet at that point.
-        if prevgear is not None and prevgear.state.at_least_locked():
-            relratio =  prevgear.get_ratio() / ratio
-            prevgear.set_relratio(relratio)
-            
-        self.to_next_state() #implied from reached to locked
-        print(f'LOCKED {self.gear}: {ratio:.3f}')
-        return True
+
+        self.ratio_deque.append(ratio)
+        if len(self.ratio_deque) < 10:
+            return
+
+        median = statistics.median(self.ratio_deque)
+        variance = statistics.variance(self.ratio_deque)
+        self.set_ratio(median)
+        self.set_variance(variance)
+
+        if (self.variance < self.VAR_BOUNDS[fdp.drivetrain_type] and
+                len(self.ratio_deque) >= self.DEQUE_MIN):
+            self.to_next_state() #implied from reached to locked
+            print(f'LOCKED {self.gear}: {median:.3f}')
+            return True
 
     def calculate_shiftrpm(self, rpm, power, nextgear):
         if (self.state.at_locked() and nextgear.state.at_least_locked()):
             relratio = self.get_ratio() / nextgear.get_ratio()
+            print(f"Calculating shiftrpm for gear {self.gear}, relratio {relratio:.2f}")
             shiftrpm = calculate_shiftrpm(rpm, power, relratio)
 
             self.set_relratio(relratio)
@@ -173,8 +176,7 @@ class Gears():
         self.gears = [None] + [Gear(g, config) for g in self.GEARLIST]
 
     def reset(self):
-        self.highest = None
-        for g in self.gears[1:]:
+       for g in self.gears[1:]:
            g.reset()
 
     def newrun_decrease_state(self):
@@ -186,22 +188,23 @@ class Gears():
             g1.calculate_shiftrpm(rpm, power, g2)
 
     def get_shiftrpm_of(self, gear):
-        if gear > 0 and gear <= MAXGEARS:
+        if 0 < gear <= MAXGEARS:
             return self.gears[int(gear)].get_shiftrpm()
         return -1
 
-    def is_highest(self, gearnr):
-        return self.highest == gearnr
+    #TODO: implement highest gear seen
+    def is_highest(self, gear):
+        return False
 
-    #call update function of gear 1 to 8. We haven't updated the GUI display
-    #because it messes up the available space
-    #add the previous gear for relative ratio calculation
-    def update(self, gtdp):
-        highest = 0
-        for gear, prevgear in zip(self.gears[1:-2], [None] + self.gears[1:-3]):
-            if gtdp.gears[gear.gear] != 0.000:
-                gear.update(gtdp, prevgear)
-                highest += 1
-        if not self.highest:
-            self.highest = highest
-            print(f'Highest gear: {self.highest}')
+    #Gear 1 - 10 are valid. Gear 0 is reverse. Gear 11 is neutral.
+    def is_valid(self, fdp):
+        gear = int(fdp.gear)
+        return 0 < gear <= 11
+
+    #call update function of current gear in fdp
+    #return True if gear has locked and therefore double beep
+    def update(self, fdp):
+        gear = int(fdp.gear)
+        if gear == 0 or gear > MAXGEARS:
+            return
+        return self.gears[gear].update(fdp)

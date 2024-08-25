@@ -45,12 +45,12 @@ class PowerGraph():
         curve_filter = curve.rpm <= revlimit_percent*revlimit
         rpm = curve.rpm[curve_filter]
         power = curve.power[curve_filter]
-        power = power / max(power) * 100 #convert to percentage
+        # power = power / max(power) * 100 #convert to percentage
 
         ax.plot(rpm, power)
         ax.grid()
         ax.set_xlabel("rpm")#, labelpad=-10)
-        ax.set_ylabel("power (% of peak)")
+        ax.set_ylabel("power (kW)")
 
         #get axis limits to force limits later, annotating moves some of these
         xmin, xmax = ax.get_xlim()
@@ -79,15 +79,15 @@ class PowerGraph():
 
         ypeak = peak_power*.90
         #emphasize location of peak power with dotted lines
-        # ax.hlines(peak_power, peak_power_rpm*.90, final_rpm,
-        #           linestyle='dotted')
+        ax.hlines(peak_power, peak_power_rpm*.90, final_rpm,
+                  linestyle='dotted')
         ax.vlines(peak_power_rpm, ypeak, ymax, linestyle='dotted')
 
         #annotate peak power, and power at respected revlimit
         ax.annotate(final_power_label, (final_rpm, final_power),
                     verticalalignment='top', horizontalalignment='left')
-        # ax.annotate(peak_power_label, (final_rpm, peak_power),
-        #             verticalalignment='center')
+        ax.annotate(peak_power_label, (final_rpm, peak_power),
+                    verticalalignment='center')
         ax.annotate(int(peak_power_rpm), (peak_power_rpm, ypeak),
                     verticalalignment='top', horizontalalignment='center')
 
@@ -169,7 +169,7 @@ class NavigationToolbar(NavigationToolbar2Tk):
 
 #class responsible for creating a tkinter window for the power graph
 class PowerWindow():
-    TITLE = "GTShiftTone: Power graph"
+    TITLE = "ForzaShiftTone: Power graph"
 
     #target width and height of the graph, not the window
     WIDTH, HEIGHT= 815, 500
@@ -253,7 +253,7 @@ class PowerWindow():
 #power graph when it has been collected. The button is disabled until the user
 #has collected a curve.
 class GUIEngineCurve(EngineCurve):
-    TITLE = "GTShiftTone: Power graph"
+    TITLE = "ForzaShiftTone: Power graph"
     #target width and height of the graph not the window
     WIDTH, HEIGHT= 813, 500
     FIGURE_DPI = 72
