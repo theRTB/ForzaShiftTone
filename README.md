@@ -1,6 +1,6 @@
 # ForzaShiftTone
 
-**Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
+**Calibrated audio tone that indicates when to shift for optimal acceleration in Forza Motorsport / Horizon 4/5**
 
 ![example v0.90 BMW M5 2018](images/sample-BMW-M5-2018-16-1.png)
 
