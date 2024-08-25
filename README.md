@@ -51,7 +51,8 @@ If you choose to not shift and remain above the trigger rpm, the program will no
 - **Revbar**: The range in which the revbar lights up. It begins at 85% and starts blinking at 99% of a predetermined value, generally equal to the upshift line in the Transmission tuning page but not always
 - **Power**: A guesstimate on which RPM peak power is hit. If it matches the in-game value, the power curve is probably quite accurate.
 - **Tach**: The current RPM value as reported by the telemetry. Updates 30 times per second.
-- **Car ID**: The internal ID of the car. The RPM/Power/Torque table is saved with this ID as filename, for example a car with Car ID 432 will have its data saved to _curves\432.tsv_.
+- **Car ID**: The internal ID of the car.  
+  The RPM/Power/Torque table is saved with this ID as filename, for example a car with Car ID 432 will have its data saved to _curves\432.tsv_.
 
 ### Per gear:
 
