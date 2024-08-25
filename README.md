@@ -25,7 +25,7 @@ To configure Data Out (remote telemetry) in supported Forza games on Steam for t
 
 ## Current release
 **ForzaShiftTone.vbs**: to launch the application (Preferred)  
-**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information
+**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information  
 **forzabeep.py**: for python users
 
 Changes:  
