@@ -4,7 +4,7 @@
 
 ![example v0.90 BMW M5 2018](images/sample-BMW-M5-2018-16-1.png)
 
-## TL;DR
+## TL;DR to calibrate per car
 
 - Per gear: Drive around on flat tarmac until you hear a double beep
   - Maintain fixed speed if it has trouble locking the gear ratio
