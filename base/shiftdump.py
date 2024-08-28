@@ -7,15 +7,15 @@ Created on Sat Jul 20 15:15:00 2024
 
 from collections import deque
 
-#in GTBeep init_vars: self.shiftdump = ShiftDump(self.lookahead)
-#in GTBeep loop_func funcs:  'loop_shiftdump',        #dump shift data
-#in GTBeep functions:
-    # def loop_shiftdump(self, gtdp):
-    #     self.shiftdump.update(gtdp)
+#in ForzaBeep init_vars: self.shiftdump = ShiftDump(self.lookahead)
+#in ForzaBeep loop_func funcs:  'loop_shiftdump',        #dump shift data
+#in ForzaBeep functions:
+    # def loop_shiftdump(self, fdp):
+    #     self.shiftdump.update(fdp)
 
 #maxlen preferred even
 class ShiftDump():
-    gtdp_props = ['current_engine_rpm', 'accel', 'clutch', 
+    fdp_props = ['current_engine_rpm', 'accel', 'clutch', 
                   'boost', 'gear', 'power']
     columns = ['rpm', 'throttle', 'clutch', 'boost', 
                'gear', 'power', 'slope', 'intercept', 'num']
@@ -27,8 +27,8 @@ class ShiftDump():
         
         self.lookahead = lookahead
     
-    def make_point(self, gtdp):
-        data = {prop:getattr(gtdp, prop) for prop in self.gtdp_props}
+    def make_point(self, fdp):
+        data = {prop:getattr(fdp, prop) for prop in self.fdp_props}
         data['slope'] = self.lookahead.slope
         data['intercept'] = self.lookahead.intercept
         data['power'] /= 1000
@@ -47,15 +47,15 @@ class ShiftDump():
     #do not display gear
     def point_tostring(self, point):
         zipped = zip(self.columns, 
-                     (self.gtdp_props + ['slope', 'intercept']))
+                     (self.fdp_props + ['slope', 'intercept']))
         array = [f'{point[p]:>{len(c)+3}}' for c,p in zipped]
         
         return ''.join(array)
     
-    def update(self, gtdp):
+    def update(self, fdp):
         #If gear number has increased, we have upshifted: start timer
         if (len(self.deque) > 0 and 
-            gtdp.gear > self.deque[-1]['gear']):
+            fdp.gear > self.deque[-1]['gear']):
             self.counter = self.halfpoint
             
         #at maximum data point (gear change halfway deque), dump data and reset
@@ -65,7 +65,7 @@ class ShiftDump():
         elif self.counter > 0:
             self.counter -= 1
         
-        point = self.make_point(gtdp)
+        point = self.make_point(fdp)
         self.deque.append(point)
 
     def header_tostring(self):
