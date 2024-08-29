@@ -1,10 +1,10 @@
 # ForzaShiftTone
 
-**Windows GUI application to provide a shift tone in Forza Motorsport and Forza Horizon 4/5.**
+**Calibrated audio tone that indicates when to shift for optimal acceleration in Forza Motorsport / Horizon 4/5**
 
 ![example v0.90 BMW M5 2018](images/sample-BMW-M5-2018-16-1.png)
 
-## TL;DR
+## TL;DR to calibrate per car
 
 - Per gear: Drive around on flat tarmac until you hear a double beep
   - Maintain fixed speed if it has trouble locking the gear ratio
@@ -25,7 +25,7 @@ To configure Data Out (remote telemetry) in supported Forza games on Steam for t
 
 ## Current release
 **ForzaShiftTone.vbs**: to launch the application (Preferred)  
-**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information
+**ForzaShiftTone-debug.bat**: to launch the application with an additional commandline window that shows debug information  
 **forzabeep.py**: for python users
 
 Changes:  
@@ -51,7 +51,8 @@ If you choose to not shift and remain above the trigger rpm, the program will no
 - **Revbar**: The range in which the revbar lights up. It begins at 85% and starts blinking at 99% of a predetermined value, generally equal to the upshift line in the Transmission tuning page but not always
 - **Power**: A guesstimate on which RPM peak power is hit. If it matches the in-game value, the power curve is probably quite accurate.
 - **Tach**: The current RPM value as reported by the telemetry. Updates 30 times per second.
-- **Car ID**: The internal ID of the car. The RPM/Power/Torque table is saved with this ID as filename, for example a car with Car ID 432 will have its data saved to _curves\432.tsv_.
+- **Car ID**: The internal ID of the car.  
+  The RPM/Power/Torque table is saved with this ID as filename, for example a car with Car ID 432 will have its data saved to _curves\432.tsv_.
 
 ### Per gear:
 
