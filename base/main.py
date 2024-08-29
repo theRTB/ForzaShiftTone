@@ -18,7 +18,7 @@ from base.history import History
 from base.carordinal import CarOrdinal
 from base.gear import Gears, MAXGEARS
 from base.enginecurve import EngineCurve
-from base.shiftdump import ShiftDump
+# from base.shiftdump import ShiftDump
 from base.configvar import (HysteresisPercent, DynamicToneOffsetToggle, Volume,
                             RevlimitPercent, RevlimitOffset, ToneOffset, 
                             IncludeReplay)
@@ -84,6 +84,7 @@ class ForzaBeep():
         self.datacollector.reset()
         self.revlimit.reset()
         self.curve.reset()
+        # self.shiftdump.reset()
         
         self.we_beeped = 0
         self.beep_counter = 0
