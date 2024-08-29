@@ -14,7 +14,7 @@ class History():
     
     def get_shiftpoint(self, target, shiftrpm, gear, beep_distance):
         data = ['N/A' if target == -1 else int(target),
-              shiftrpm,
+              int(shiftrpm),
               gear,
               'N/A' if beep_distance is None else packets_to_ms(beep_distance)]
                     
