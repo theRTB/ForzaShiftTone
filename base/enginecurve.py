@@ -9,7 +9,7 @@ import csv
 import numpy as np
 from os.path import exists
 
-from os import makedirs
+from os import makedirs, remove
 makedirs('curves/', exist_ok=True) #create curves folder if not exists
 
 from utility import np_drag_fit, simplify_curve, round_to
@@ -31,7 +31,7 @@ class EngineCurve():
     DELIMITER = '\t'
     ENCODING = 'ISO-8859-1' #why not UTF-8?
     FOLDER = 'curves'
-    FILENAME = lambda _, gtdp: f'{EngineCurve.FOLDER}/{gtdp.car_ordinal}.tsv'
+    FILENAME = lambda _, ordinal: f'{EngineCurve.FOLDER}/{ordinal}.tsv'
     ROUND = 100 #round the saved curve to multiples of round
     ROUND_REVLIMIT = 50 #covers 99.9% of all standard revlimits
     
@@ -41,9 +41,15 @@ class EngineCurve():
         for var in ['curve_state', 'rpm', 'power', 'torque', 'revlimit']:
             setattr(self, var, None)
 
-    def reset(self):
+    def reset(self, ordinal=None):
         for var in ['curve_state', 'rpm', 'power', 'torque', 'revlimit']:
             setattr(self, var, None)
+        if ordinal is not None:
+          filename = self.FILENAME(ordinal)
+          try:
+            remove(filename)
+          except Exception:
+            pass
 
     def is_loaded(self):
         return self.curve_state == True
@@ -53,7 +59,7 @@ class EngineCurve():
         if self.curve_state:
             return #this should not happen though
         
-        filename = self.FILENAME(gtdp)
+        filename = self.FILENAME(gtdp.car_ordinal)
         if exists(filename): #file exists
             self.load(filename)
             self.curve_state = True

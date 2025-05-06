@@ -78,12 +78,12 @@ class ForzaBeep():
     def reset(self, *args):
         self.rpm.reset()
         self.history.reset()
+        self.curve.reset(self.car_ordinal.get())
         self.car_ordinal.reset()
         self.gears.reset()
         self.lookahead.reset()
         self.datacollector.reset()
         self.revlimit.reset()
-        self.curve.reset()
         # self.shiftdump.reset()
         
         self.we_beeped = 0
