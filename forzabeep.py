@@ -5,12 +5,12 @@ Created on Sun May  7 19:35:24 2023
 @author: RTB
 """
 
-from base.main import ForzaBeep
-from gui.main import GUIForzaBeep
+from forzagui.shiftbeep import GUIShiftBeep
+# from forzabase.shiftbeep import ShiftBeep
 
 def main():
     global forzabeep #for debugging
-    forzabeep = GUIForzaBeep()
+    forzabeep = GUIShiftBeep()
 
 if __name__ == "__main__":
     main()

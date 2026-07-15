@@ -1,0 +1,10 @@
+cars_keys.json
+Downloaded from https://github.com/bluemanos/forza-motorsport-car-track-ordinal/tree/master/fm8 on 2024-08-25
+Credit to bluemanos, URL: https://github.com/bluemanos/forza-motorsport-car-track-ordinal
+Not dynamically updated
+
+fh6_cars_keys.json
+Downloaded from https://gist.github.com/HDR/0659d1717bc61504bf83750628963f4f on 2026-07-13
+Credit to HDR, URL: https://gist.github.com/HDR
+Modified to use the same json structure as the FM8 data
+Not dynamically updated

@@ -6,7 +6,7 @@ Created on Wed Sep 13 10:23:57 2023
 """
 #A collection of various utility functions for the rest of the files
 
-#general purpose variable class
+#general purpose variable class with option to reset to initial value
 class Variable(object):
     def __init__(self, defaultvalue=None, *args, **kwargs):
         self.value = defaultvalue
@@ -62,17 +62,53 @@ def deloop_and_sort(array, key_x, key_y, key_sort, max_loop=50):
 def round_to(val, n):
     return round(val/n)*n
 
-
-
-import winsound
+#TODO: Consider pydub
 from config import config
+import os
+if os.name == 'nt':
+    import winsound
+        
+    #attempt to play filename async
+    def tryplaysound(filename=None):
+        try:
+            winsound.PlaySound(filename, (winsound.SND_FILENAME |
+                                          winsound.SND_ASYNC |
+                                          winsound.SND_NODEFAULT))
+        except:
+            print(f"Sound failed to play: {filename}")
 
-def beep(filename=config.sound_file):
-    try:
-        winsound.PlaySound(filename, (winsound.SND_FILENAME | 
-                           winsound.SND_ASYNC | winsound.SND_NODEFAULT))
-    except:
-        print(f"Sound failed to play: {filename}")
+    #This should be legacy?
+    def beep(filename=config.sound_file):
+        try:
+            winsound.PlaySound(filename, (winsound.SND_FILENAME |
+                                          winsound.SND_ASYNC |
+                                          winsound.SND_NODEFAULT))
+        except:
+            print(f"Sound failed to play: {filename}")
+else: #assume Linux
+    import simpleaudio as sa
+    soundcache = {}
+    def tryplaysound(filename=None):
+        if filename is None:
+            sa.stop_all()
+            return
+
+        wave_obj = soundcache.get(filename, None)
+        if wave_obj is None:
+            try:
+                wave_obj = sa.WaveObject.from_wave_file(filename)
+                soundcache[filename] = wave_obj
+            except:
+                print(f"Could not load sound file: {filename}")
+                return
+
+        try:
+            wave_obj.play()
+        except:
+            print(f"Sound failed to play: {filename}")
+
+    def beep(filename=config.sound_file):
+        tryplaysound(filename=filename)
 
 from threading import Timer
 def multi_beep(filename=config.sound_file, duration=0.1, count=2, delay=0.1):
@@ -118,7 +154,6 @@ def derive_gearratio(fdp):
 
 
 import intersect
-
 #determine shift rpm by finding the intersection point of two power curves:
 # one as is, the other multiplied by the relative ratio of the two consecutive
 # gears. The second is how much longer the next gear is relatively.
@@ -126,14 +161,15 @@ import intersect
 #point on the x-axis where intersection occurs, the second is the y-axis
 #we are only interested in the x-axis and we assume the last intersection is
 #the most accurate one.
-def calculate_shiftrpm(rpm, power, relratio):
+def calculate_shiftrpm(rpm, power, relratio, do_print=True):
     intersects = intersect.intersection(rpm, power, rpm*relratio, power)[0]
     shiftrpm = round(intersects[-1],0) if len(intersects) > 0 else rpm[-1]
-    print(f"shift rpm {shiftrpm:.0f}, drop to {shiftrpm/relratio:.0f}, "
-          f"drop is {shiftrpm*(1.0 - 1.0/relratio):.0f}")
-
-    if len(intersects) > 1:
-        print("Warning: multiple intersects found: graph may be noisy")
+    
+    if do_print:
+        print(f"shift RPM {shiftrpm:.0f}, drop to {shiftrpm/relratio:.0f}, "
+              f"drop is {shiftrpm*(1.0 - 1.0/relratio):.0f}")
+        if len(intersects) > 1:
+            print("Warning: multiple intersects found: graph may be noisy")
 
     return shiftrpm
 
@@ -159,13 +195,29 @@ def rolling_avg(y, box_pts, mode='valid'):
 #x is assumed to be sorted and increases monotonically
 #optionally include a 'true' xmax to extend/shorten the curve to
 #the final point of x array is included
-def simplify_curve(x, y, xmax=None, n=100):
-    xmax = x[-1] if xmax is None else xmax
-    startx = math.ceil(x[0]/n)*n
-    newx = np.append(np.arange(startx, xmax, n), xmax)
-    newy = np.interp(newx, x, y)
+# def simplify_curve(x, y, xmax=None, n=100):
+#     xmax = x[-1] if xmax is None else xmax
+#     startx = math.ceil(x[0]/n)*n
+#     newx = np.arange(startx, xmax+1, n)
+#     newy = np.interp(newx, x, y)
     
-    return (newx, newy)
+#     return (newx, newy)
+def simplify_curve(x, y, xmin=None, xmax=None, n=500):
+    xmax = x[-1] if xmax is None else xmax
+    startx = math.floor(x[0]/n)*n if xmin is None else xmin
+    newx = np.arange(startx, xmax+1, n)
+    
+    starty = (y[0] - y[3]) / (x[0] - x[3]) * (startx - x[0]) + y[0]
+    endy = (y[-1] - y[-4]) / (x[-1] - x[-4]) * (xmax - x[-1]) + y[-1]
+    
+    #TODO: use statistics.linear_regression
+    
+    if xmax is not None and xmax % n != 0:
+        newx = np.append(newx, xmax)
+        
+    newy = np.interp(newx, x, y, left=starty, right=endy)
+
+    return newx, newy
 
 #Derives an rpm/torque curve from an rpm/accel curve up to revlimit along with
 #an array of consecutive velocity/accel points at high speed. The 
@@ -178,7 +230,8 @@ def simplify_curve(x, y, xmax=None, n=100):
 #  anything with this?
 def np_drag_fit(accelrun, dragrun, dragrun_bounds=(10, None), 
                 accelrun_bounds=(0, None), smoothing='multi_rolling', 
-                accelrun_smooth=[3,21], sort_rpm=True, interval=100):
+                accelrun_smooth=(3,21), sort_rpm=True, interval=100,
+                relative=True, *args, **kwargs):
 
     if smoothing == 'rolling':
         accelrun.rolling_avg(box_pts=accelrun_smooth)
@@ -197,13 +250,128 @@ def np_drag_fit(accelrun, dragrun, dragrun_bounds=(10, None),
     
     if interval:
         rpmmax = accelrun.revlimit
-        rpm, torque = simplify_curve(rpm_shape, torque_shape, rpmmax, interval)
+        rpm, torque = simplify_curve(rpm_shape, torque_shape, 
+                                     xmax=rpmmax, n=interval)
+    else:
+        rpm = rpm_shape
+        torque = torque_shape
     
     power = torque * rpm
     
-    return (np.array(rpm), 
-            100*torque/max(torque), 
-            100*power/max(power))
+    if relative:
+        torque = 100*torque/max(torque)
+        power = 100*power/max(power)
+    
+    return np.array(rpm), torque, power
+
+import csv
+from os.path import exists
+
+#poorly named: does not extend Curve
+#Given an array of consecutive rpm/accel points at full throttle and an array
+#of consecutive accel points with the clutch disengaged we can derive a torque
+#curve and thus a power curve.
+#TODO: Do we round revlimit? It is generally above true revlimit.
+#At stock, revlimit is a multiple of 100, but upgrades can be things like 3%
+#more revs and make it a random number. 
+#Appending a single value to an np.array is not efficient
+#Consider only working off torque and deriving power later.
+class PowerCurve():
+    COLUMNS = ['rpm', 'power', 'torque']
+    DELIMITER = '\t'
+    ENCODING = 'ISO-8859-1' #why not UTF-8?
+    def __init__(self, *args, **kwargs):
+        if 'filename' in kwargs.keys():
+            print("PowerCurve init from file")
+            self.init_from_file(*args, **kwargs)
+        else:
+            print("PowerCurve init from drag")
+            self.init_from_drag_fit(*args, **kwargs)
+
+    def init_from_file(self, filename, *args, **kwargs):
+        self.load(filename)
+    
+    def init_from_drag_fit(self, *args, **kwargs):
+        accelrun = kwargs.get('accelrun', None)
+        if accelrun is None:
+            accelrun = args[0]
+        result = np_drag_fit(*args, **kwargs)
+        self.revlimit = accelrun.revlimit
+        self.rpm, self.torque, self.power = result
+        
+        self.correct_final_point()
+
+    #naively extrapolates power when it is a consequence of torque*rpm
+    #The result is close enough though
+    def correct_final_point(self):
+        x1, x2 = self.rpm[-2:]
+        # print(f'x1 {x1:.3f} x2 {x2:.3f} revlimit {self.revlimit}')
+        np.append(self.rpm, self.revlimit)
+        self.rpm = np.append(self.rpm, self.revlimit)
+        for name in ['power', 'torque']: #,'boost']:
+            array = getattr(self, name)
+            y1, y2 = array[-2:]
+            ynew = (y2 - y1) / (x2 - x1) * (self.revlimit - x2) + y2
+            setattr(self, name, np.append(array, ynew))
+            # print(f'y1 {y1:.3f} y2 {y2:.3f} ynew {ynew:.3f}')
+
+    #get peak power according to peak power rounded to 0.x
+    #the rounding is necessary to avoid some randomness in collecting a curve
+    def get_peakpower_tuple(self, decimals=1):
+        power_rounded = np.round(self.power, decimals)
+        index = np.argmax(power_rounded)
+        return (self.rpm[index], max(power_rounded))
+
+    def get_revlimit(self):
+        return self.rpm[-1]
+
+    #TODO: linear interpolation and possibly extrapolation
+    def torque_at_rpm(self, target_rpm):
+        i = np.argmin(np.abs(self.rpm - target_rpm))
+        return self.torque[i]
+    
+    def save(self, filename, overwrite=True):
+        if exists(filename):
+            if not overwrite:
+                print(f'file {filename} already exists, aborted by bool')
+                return False
+            else:
+                print(f'file {filename} already exists, overwriting')
+
+        data = [getattr(self, column) for column in self.COLUMNS]
+        
+        #hardcoding adjustment to rpm, power and torque output
+        data[0] = [f'{rpm:.0f}' for rpm in data[0]] 
+        data[1] = [f'{power:.2f}' for power in data[1]]
+        data[2] = [f'{torque:.2f}' for torque in data[2]]
+        
+        with open(filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile, delimiter=self.DELIMITER)
+            writer.writerow(self.COLUMNS)
+            
+            #flip array structure from per column to per row before writing
+            writer.writerows(zip(*data)) 
+            
+        return True #TODO: add catch to with statement because write may fail
+    
+    #
+    def load(self, filename):
+        if not exists(filename):
+            print(f'file {filename} does not exist')
+            return
+        
+        with open(filename, encoding=self.ENCODING) as rawcsv:
+            csvobject = csv.reader(rawcsv, delimiter=self.DELIMITER)
+            headers = next(csvobject)
+            csvdata = [[float(p) for p in row] for row in csvobject]
+        
+        #flip array structure from per row to per column
+        rawdata = list(zip(*csvdata))
+        
+        for name, array in zip(headers, rawdata):
+            setattr(self, name, np.array(array))
+            if name not in self.columns:
+                print(f'LOAD: Unexpected column {name} found, loaded anyway')
 
 
 
